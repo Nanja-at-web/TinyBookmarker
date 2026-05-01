@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title }}{% endblock %} · TinyBookmarker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="page-{{ page|default('') }}">
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('all_bookmarks') }}">TinyBookmarker</a>
+    <form class="topbar-search" action="{{ url_for('all_bookmarks') }}" method="get" role="search">
+      <input
+        type="search"
+        name="q"
+        value="{{ filters.query if filters else '' }}"
+        placeholder="Search bookmarks"
+        aria-label="Search bookmarks">
+    </form>
+    <a class="topbar-primary" href="{{ url_for('new_bookmark') }}">+ New Bookmark</a>
+    <span class="topbar-profile" aria-hidden="true">Profile</span>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar" aria-label="Main">
+      <div class="sidebar-group">
+        <h2>Primary</h2>
+        <ul>
+          <li><a class="{{ 'active' if page == 'all_bookmarks' else '' }}" href="{{ url_for('all_bookmarks') }}">All Bookmarks</a></li>
+          <li><a class="{{ 'active' if page == 'favorites' else '' }}" href="{{ url_for('favorites') }}">Favorites</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group sidebar-group-muted">
+        <h2>Organization</h2>
+        <ul>
+          <li><span class="sidebar-soon">Collections</span></li>
+          <li><span class="sidebar-soon">Tags</span></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group sidebar-group-muted">
+        <h2>Maintenance</h2>
+        <ul>
+          <li><span class="sidebar-soon">Duplicates</span></li>
+          <li><span class="sidebar-soon">Import / Export</span></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group sidebar-group-muted">
+        <h2>Secondary</h2>
+        <ul>
+          <li><span class="sidebar-soon">Profile</span></li>
+          <li><span class="sidebar-soon">Settings</span></li>
+          <li><span class="sidebar-soon">System</span></li>
+          <li><span class="sidebar-soon">Admin</span></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="main" role="main">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-list">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block main %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

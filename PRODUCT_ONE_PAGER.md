@@ -95,7 +95,7 @@ Primary action:
 ## Core daily workflow
 
 1. Save a new bookmark
-2. If needed, let it land in Inbox / triage
+2. The bookmark stays in All Bookmarks as unsorted until it is organized
 3. Organize it with favorites, collections and tags
 4. Search or filter later
 5. Review duplicates when needed

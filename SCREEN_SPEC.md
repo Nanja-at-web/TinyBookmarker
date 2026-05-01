@@ -164,9 +164,14 @@ If there are no bookmarks:
 ## First-version filters
 Keep the first set small:
 - Favorites only
-- Unsorted / Inbox only
+- Unsorted only
 - Collection
 - Tag
+
+`Unsorted` is a small state inside `All Bookmarks` for bookmarks that have no
+collection and no tag yet. It is a filter, not a separate area. A `Needs review`
+saved view may be added later as a sibling filter, but it must never become its
+own main navigation entry.
 
 Do not overload the first version with too many filter chips.
 
@@ -220,7 +225,9 @@ You can organize it immediately or review it later.
 ## First-version default behavior
 If the bookmark is saved without organization:
 - it should still be valid
-- it may be treated as inbox/unsorted state
+- it appears under the `Unsorted` filter inside `All Bookmarks` until it gets
+  a collection or tag
+- it does not move into a separate area, queue or inbox screen
 
 ## Empty / helper text behavior
 If URL is blank:

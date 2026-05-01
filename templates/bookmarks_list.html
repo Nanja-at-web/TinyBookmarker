@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block main %}
+<header class="page-header">
+  <h1>{{ page_title }}</h1>
+  <p class="page-subtitle">{{ page_subtitle }}</p>
+</header>
+
+<section class="toolbar" aria-label="List tools">
+  <form class="toolbar-form" method="get" action="">
+    <label class="visually-hidden" for="q">Search</label>
+    <input id="q" type="search" name="q" value="{{ filters.query }}" placeholder="Search this list">
+
+    {% if page == 'all_bookmarks' %}
+    <label class="visually-hidden" for="filter">Filter</label>
+    <select id="filter" name="filter">
+      <option value="">All bookmarks</option>
+      <option value="inbox" {% if filters.inbox_only %}selected{% endif %}>Unsorted only</option>
+    </select>
+    {% endif %}
+
+    {% if collections %}
+    <label class="visually-hidden" for="collection">Collection</label>
+    <select id="collection" name="collection">
+      <option value="">Any collection</option>
+      {% for c in collections %}
+        <option value="{{ c.id }}" {% if filters.collection_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+
+    {% if tags %}
+    <label class="visually-hidden" for="tag">Tag</label>
+    <select id="tag" name="tag">
+      <option value="">Any tag</option>
+      {% for t in tags %}
+        <option value="{{ t.id }}" {% if filters.tag_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+
+    <label class="visually-hidden" for="sort">Sort</label>
+    <select id="sort" name="sort">
+      <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest first</option>
+      <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+      <option value="title"  {% if filters.sort == 'title'  %}selected{% endif %}>Title (A–Z)</option>
+    </select>
+
+    <button type="submit" class="btn btn-secondary">Apply</button>
+  </form>
+
+  <p class="toolbar-count">{{ items|length }} bookmark{{ '' if items|length == 1 else 's' }}</p>
+</section>
+
+{% if items %}
+  <ul class="bookmark-list">
+    {% for b in items %}
+      <li class="bookmark-row {% if b.is_favorite %}is-favorite{% endif %}">
+        <div class="bookmark-main">
+          <a class="bookmark-title" href="{{ b.url }}" target="_blank" rel="noopener noreferrer">
+            {{ b.title or b.url }}
+          </a>
+          <p class="bookmark-meta">
+            <span class="bookmark-domain">{{ b.domain or b.url }}</span>
+            {% if b.collections %}
+              <span class="meta-sep">·</span>
+              {% for c in b.collections %}
+                <span class="badge badge-collection">{{ c.name }}</span>
+              {% endfor %}
+            {% endif %}
+            {% if b.tags %}
+              <span class="meta-sep">·</span>
+              {% for t in b.tags %}
+                <span class="badge badge-tag">#{{ t.name }}</span>
+              {% endfor %}
+            {% endif %}
+          </p>
+          {% if b.description %}
+            <p class="bookmark-description">{{ b.description }}</p>
+          {% endif %}
+        </div>
+        <div class="bookmark-actions">
+          <form method="post" action="{{ url_for('toggle_favorite', bookmark_id=b.id) }}">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <button type="submit"
+                    class="icon-btn {% if b.is_favorite %}icon-btn-on{% endif %}"
+                    aria-pressed="{{ 'true' if b.is_favorite else 'false' }}"
+                    title="{{ 'Unfavorite' if b.is_favorite else 'Favorite' }}">
+              {{ '★' if b.is_favorite else '☆' }}
+            </button>
+          </form>
+          <a class="btn btn-link" href="{{ url_for('edit_bookmark', bookmark_id=b.id) }}">Edit</a>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <section class="empty-state">
+    {% if empty_kind == 'favorites' %}
+      <h2>No favorites yet</h2>
+      <p>Favorites are your personal quick-access layer. Mark a bookmark with the star to bring it here.</p>
+      <p class="empty-note">Favorites do not replace collections — collections group bookmarks by structure.</p>
+      <a class="btn btn-primary" href="{{ url_for('all_bookmarks') }}">Go to All Bookmarks</a>
+    {% else %}
+      <h2>Your bookmark library is empty</h2>
+      <p>This is your everyday bookmark workspace. Save your first bookmark to get started.</p>
+      <a class="btn btn-primary" href="{{ url_for('new_bookmark') }}">+ New Bookmark</a>
+      <p class="empty-note">You can also import existing bookmarks later from the Import / Export area.</p>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}

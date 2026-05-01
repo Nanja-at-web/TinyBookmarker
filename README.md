@@ -46,7 +46,7 @@ TinyBookmarker is centered around these main areas:
 - quick add
 - sensible defaults
 - duplicate preflight
-- inbox / triage support
+- unsorted state for bookmarks that still need review inside All Bookmarks
 
 ### Organize
 - favorites

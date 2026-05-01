@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block main %}
+<header class="page-header">
+  <h1>{{ page_title }}</h1>
+  <p class="page-subtitle">{{ page_subtitle }}</p>
+</header>
+
+<form class="bookmark-form"
+      method="post"
+      action="{{ url_for('edit_bookmark', bookmark_id=bookmark.id) if is_edit else url_for('new_bookmark') }}">
+
+  <div class="field">
+    <label for="url">URL <span class="required">*</span></label>
+    <input id="url" name="url" type="url" required autofocus
+           value="{{ form.url }}"
+           placeholder="https://example.com/page">
+    {% if errors.url %}<p class="field-error">{{ errors.url }}</p>{% endif %}
+    {% if not form.url and not errors.url %}
+      <p class="field-hint">Paste or type the URL you want to save.</p>
+    {% endif %}
+  </div>
+
+  <div class="field">
+    <label for="title">Title</label>
+    <input id="title" name="title" type="text" value="{{ form.title }}"
+           placeholder="A short, recognizable name">
+  </div>
+
+  <div class="field field-inline">
+    <label class="checkbox">
+      <input type="checkbox" name="is_favorite" value="on"
+             {% if form.is_favorite %}checked{% endif %}>
+      Mark as favorite
+    </label>
+  </div>
+
+  <details class="field-group" {% if form.collection_ids or form.tag_names or form.description or is_edit %}open{% endif %}>
+    <summary>Organize (collections, tags, notes)</summary>
+
+    <div class="field">
+      <label>Collections</label>
+      {% if collections %}
+        <div class="checkbox-grid">
+          {% for c in collections %}
+            <label class="checkbox">
+              <input type="checkbox" name="collection_ids" value="{{ c.id }}"
+                     {% if c.id in form.collection_ids %}checked{% endif %}>
+              {{ c.name }}
+            </label>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="field-hint">No collections yet. You can add them later from the Collections area.</p>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="tags">Tags</label>
+      <input id="tags" name="tags" type="text"
+             value="{{ form.tag_names|join(', ') }}"
+             placeholder="comma, separated, tags">
+      <p class="field-hint">New tags are created on save.</p>
+    </div>
+
+    <div class="field">
+      <label for="description">Notes</label>
+      <textarea id="description" name="description" rows="3"
+                placeholder="Optional short note">{{ form.description }}</textarea>
+    </div>
+  </details>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">
+      {{ 'Save changes' if is_edit else 'Save bookmark' }}
+    </button>
+    <a class="btn btn-link" href="{{ url_for('all_bookmarks') }}">Cancel</a>
+
+    {% if is_edit %}
+      <span class="form-actions-spacer"></span>
+    {% endif %}
+  </div>
+</form>
+
+{% if is_edit %}
+  <form class="danger-zone"
+        method="post"
+        action="{{ url_for('delete_bookmark', bookmark_id=bookmark.id) }}"
+        onsubmit="return confirm('Delete this bookmark? This cannot be undone.');">
+    <button type="submit" class="btn btn-danger">Delete bookmark</button>
+  </form>
+{% endif %}
+{% endblock %}

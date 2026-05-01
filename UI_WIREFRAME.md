@@ -408,11 +408,17 @@ Manage users and administrative controls.
 TinyBookmarker should reinforce one clear primary workflow:
 
 1. add a bookmark
-2. optionally land in Inbox / triage
+2. it stays inside All Bookmarks under `Unsorted` until it gets organized
 3. organize with favorites, collections and tags
 4. return later through bookmarks/search/favorites
 5. clean duplicates when needed
 6. import/export only when migrating
+
+`Unsorted` is a small state and filter inside All Bookmarks, not a separate
+area. The main navigation must stay limited to Bookmarks, Favorites,
+Collections, Tags, Duplicates, Import / Export and the secondary group. A
+`Needs review` saved view may be added later as a sibling filter, but it must
+not become its own main sidebar entry.
 
 This flow should remain more prominent than:
 - system tasks

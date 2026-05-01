@@ -1,0 +1,252 @@
+import os
+
+from flask import (
+    Flask,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+
+import bookmarks as bm
+import db
+
+
+def create_app(config: dict | None = None) -> Flask:
+    app = Flask(__name__)
+    app.config.update(
+        SECRET_KEY=os.environ.get("TINYBOOKMARKER_SECRET", "dev-secret-change-me"),
+        DATABASE=os.environ.get(
+            "TINYBOOKMARKER_DB",
+            os.path.join(app.instance_path, "tinybookmarker.sqlite"),
+        ),
+    )
+    if config:
+        app.config.update(config)
+
+    db.init_db(app)
+    db.init_app(app)
+
+    register_routes(app)
+    return app
+
+
+def register_routes(app: Flask) -> None:
+    @app.get("/")
+    def index():
+        return redirect(url_for("all_bookmarks"))
+
+    @app.get("/bookmarks")
+    def all_bookmarks():
+        conn = db.get_db()
+        params = _parse_list_params(request.args)
+        items = bm.list_bookmarks(conn, **params)
+        return render_template(
+            "bookmarks_list.html",
+            page="all_bookmarks",
+            page_title="All Bookmarks",
+            page_subtitle="Your full bookmark library. Use this area for everyday bookmark work.",
+            items=items,
+            collections=bm.list_collections(conn),
+            tags=bm.list_tags(conn),
+            filters=params,
+            empty_kind="all",
+        )
+
+    @app.get("/favorites")
+    def favorites():
+        conn = db.get_db()
+        params = _parse_list_params(request.args)
+        params["favorites_only"] = True
+        items = bm.list_bookmarks(conn, **params)
+        return render_template(
+            "bookmarks_list.html",
+            page="favorites",
+            page_title="Favorites",
+            page_subtitle="Your personal quick-access bookmarks.",
+            items=items,
+            collections=bm.list_collections(conn),
+            tags=bm.list_tags(conn),
+            filters=params,
+            empty_kind="favorites",
+        )
+
+    @app.route("/bookmarks/new", methods=["GET", "POST"])
+    def new_bookmark():
+        conn = db.get_db()
+        if request.method == "POST":
+            data, errors = _parse_form(request.form)
+            if errors:
+                return render_template(
+                    "bookmark_form.html",
+                    page="new_bookmark",
+                    page_title="New Bookmark",
+                    page_subtitle="Save a bookmark now. You can organize it immediately or review it later.",
+                    form=data,
+                    errors=errors,
+                    collections=bm.list_collections(conn),
+                    is_edit=False,
+                ), 400
+
+            bm.create_bookmark(
+                conn,
+                url=data["url"],
+                title=data["title"],
+                description=data["description"],
+                is_favorite=data["is_favorite"],
+                collection_ids=data["collection_ids"],
+                tag_names=data["tag_names"],
+            )
+            flash("Bookmark saved.", "success")
+            return redirect(url_for("all_bookmarks"))
+
+        prefill_url = request.args.get("url", "").strip()
+        return render_template(
+            "bookmark_form.html",
+            page="new_bookmark",
+            page_title="New Bookmark",
+            page_subtitle="Save a bookmark now. You can organize it immediately or review it later.",
+            form={
+                "url": prefill_url,
+                "title": "",
+                "description": "",
+                "is_favorite": False,
+                "collection_ids": [],
+                "tag_names": [],
+            },
+            errors={},
+            collections=bm.list_collections(conn),
+            is_edit=False,
+        )
+
+    @app.route("/bookmarks/<int:bookmark_id>/edit", methods=["GET", "POST"])
+    def edit_bookmark(bookmark_id: int):
+        conn = db.get_db()
+        existing = bm.get_bookmark(conn, bookmark_id)
+        if existing is None:
+            abort(404)
+
+        if request.method == "POST":
+            data, errors = _parse_form(request.form)
+            if errors:
+                return render_template(
+                    "bookmark_form.html",
+                    page="edit_bookmark",
+                    page_title="Edit Bookmark",
+                    page_subtitle="Review and update this bookmark.",
+                    form=data,
+                    errors=errors,
+                    collections=bm.list_collections(conn),
+                    is_edit=True,
+                    bookmark=existing,
+                ), 400
+
+            bm.update_bookmark(
+                conn,
+                bookmark_id,
+                url=data["url"],
+                title=data["title"],
+                description=data["description"],
+                is_favorite=data["is_favorite"],
+                collection_ids=data["collection_ids"],
+                tag_names=data["tag_names"],
+            )
+            flash("Bookmark updated.", "success")
+            return redirect(url_for("all_bookmarks"))
+
+        return render_template(
+            "bookmark_form.html",
+            page="edit_bookmark",
+            page_title="Edit Bookmark",
+            page_subtitle="Review and update this bookmark.",
+            form={
+                "url": existing["url"],
+                "title": existing["title"],
+                "description": existing["description"],
+                "is_favorite": bool(existing["is_favorite"]),
+                "collection_ids": [c["id"] for c in existing["collections"]],
+                "tag_names": [t["name"] for t in existing["tags"]],
+            },
+            errors={},
+            collections=bm.list_collections(conn),
+            is_edit=True,
+            bookmark=existing,
+        )
+
+    @app.post("/bookmarks/<int:bookmark_id>/delete")
+    def delete_bookmark(bookmark_id: int):
+        conn = db.get_db()
+        if bm.get_bookmark(conn, bookmark_id) is None:
+            abort(404)
+        bm.delete_bookmark(conn, bookmark_id)
+        flash("Bookmark deleted.", "success")
+        return redirect(request.form.get("next") or url_for("all_bookmarks"))
+
+    @app.post("/bookmarks/<int:bookmark_id>/toggle-favorite")
+    def toggle_favorite(bookmark_id: int):
+        conn = db.get_db()
+        result = bm.toggle_favorite(conn, bookmark_id)
+        if result is None:
+            abort(404)
+        return redirect(request.form.get("next") or url_for("all_bookmarks"))
+
+
+def _parse_list_params(args) -> dict:
+    def maybe_int(v):
+        try:
+            return int(v) if v not in (None, "") else None
+        except ValueError:
+            return None
+
+    sort = args.get("sort", "newest")
+    if sort not in {"newest", "oldest", "title"}:
+        sort = "newest"
+
+    return {
+        "favorites_only": False,
+        "inbox_only": args.get("filter") == "inbox",
+        "collection_id": maybe_int(args.get("collection")),
+        "tag_id": maybe_int(args.get("tag")),
+        "query": (args.get("q") or "").strip(),
+        "sort": sort,
+    }
+
+
+def _parse_form(form) -> tuple[dict, dict]:
+    url = (form.get("url") or "").strip()
+    title = (form.get("title") or "").strip()
+    description = (form.get("description") or "").strip()
+    is_favorite = form.get("is_favorite") in ("on", "1", "true")
+
+    collection_ids: list[int] = []
+    for raw in form.getlist("collection_ids"):
+        try:
+            collection_ids.append(int(raw))
+        except ValueError:
+            continue
+
+    tag_names = bm.split_tag_input(form.get("tags", ""))
+
+    errors: dict[str, str] = {}
+    if not url:
+        errors["url"] = "URL is required."
+    elif not (url.startswith("http://") or url.startswith("https://")):
+        errors["url"] = "URL must start with http:// or https://."
+
+    return (
+        {
+            "url": url,
+            "title": title,
+            "description": description,
+            "is_favorite": is_favorite,
+            "collection_ids": collection_ids,
+            "tag_names": tag_names,
+        },
+        errors,
+    )
+
+
+if __name__ == "__main__":
+    create_app().run(debug=True)
