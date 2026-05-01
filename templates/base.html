@@ -49,7 +49,7 @@
         <h2>Organization</h2>
         <ul>
           <li><a class="{{ 'active' if page == 'collections' else '' }}" href="{{ url_for('collections') }}">Collections</a></li>
-          <li><span class="sidebar-soon">Tags</span></li>
+          <li><a class="{{ 'active' if page == 'tags' else '' }}" href="{{ url_for('tags') }}">Tags</a></li>
         </ul>
       </div>
 

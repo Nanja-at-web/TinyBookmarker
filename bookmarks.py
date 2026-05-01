@@ -311,6 +311,47 @@ def list_tags(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM tags ORDER BY LOWER(name)")]
 
 
+def list_tags_with_counts(db: sqlite3.Connection) -> list[dict]:
+    """Return all tags with their bookmark counts, sorted alphabetically."""
+    rows = db.execute(
+        """
+        SELECT t.id, t.name, COUNT(bt.bookmark_id) AS bookmark_count
+          FROM tags t
+          LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
+         GROUP BY t.id, t.name
+         ORDER BY LOWER(t.name)
+        """
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_tag(db: sqlite3.Connection, tag_id: int) -> dict | None:
+    """Return {id, name} for a tag, or None if not found."""
+    row = db.execute("SELECT id, name FROM tags WHERE id = ?", (tag_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def rename_tag(db: sqlite3.Connection, tag_id: int, new_name: str) -> str | None:
+    """Rename a tag. Returns None on success or an error message on failure."""
+    new_name = new_name.strip()
+    if not new_name:
+        return "Tag name is required."
+    existing = db.execute(
+        "SELECT id FROM tags WHERE name = ? AND id != ?", (new_name, tag_id)
+    ).fetchone()
+    if existing:
+        return "A tag with this name already exists."
+    db.execute("UPDATE tags SET name = ? WHERE id = ?", (new_name, tag_id))
+    db.commit()
+    return None
+
+
+def delete_tag(db: sqlite3.Connection, tag_id: int) -> None:
+    """Delete a tag. Bookmarks are kept; only the tag label is removed (CASCADE)."""
+    db.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
+    db.commit()
+
+
 def get_or_create_collection(db: sqlite3.Connection, name: str) -> int:
     name = name.strip()
     row = db.execute("SELECT id FROM collections WHERE name = ?", (name,)).fetchone()

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block main %}
+<header class="page-header">
+  <h1>Tags</h1>
+  <p class="page-subtitle">Flexible labels across topics. Add tags when saving or editing a bookmark.</p>
+</header>
+
+{% if tags %}
+  <ul class="collection-list">
+    {% for t in tags %}
+      <li class="collection-row">
+        <div class="collection-info">
+          <a class="collection-name" href="{{ url_for('all_bookmarks', tag=t.id) }}">{{ t.name }}</a>
+          <span class="collection-count">
+            {{ t.bookmark_count }} bookmark{{ '' if t.bookmark_count == 1 else 's' }}
+          </span>
+        </div>
+        <div class="collection-actions">
+          <a class="btn btn-link collection-rename-link"
+             href="{{ url_for('edit_tag', tag_id=t.id) }}">Rename</a>
+          <form method="post"
+                action="{{ url_for('delete_tag', tag_id=t.id) }}"
+                onsubmit="return confirm('Delete &quot;{{ t.name }}&quot;? The tag will be removed. Your bookmarks will not be deleted.');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <section class="empty-state">
+    <h2>No tags yet</h2>
+    <p>Tags are flexible labels you can add across topics. Add tags when saving or editing a bookmark.</p>
+    <p class="empty-note">Collections are for structure. Tags are for flexible cross-topic labels.</p>
+  </section>
+{% endif %}
+{% endblock %}

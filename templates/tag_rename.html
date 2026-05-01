@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block main %}
+<header class="page-header">
+  <h1>Rename Tag</h1>
+  <p class="page-subtitle">Change the name of this tag.</p>
+</header>
+
+<form class="bookmark-form"
+      method="post"
+      action="{{ url_for('edit_tag', tag_id=tag.id) }}">
+
+  <div class="field field-primary">
+    <label for="name">Tag name <span class="required">*</span></label>
+    <input id="name" name="name" type="text" required autofocus
+           value="{{ form_name }}">
+    {% if error %}<p class="field-error">{{ error }}</p>{% endif %}
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a class="btn btn-link" href="{{ url_for('tags') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

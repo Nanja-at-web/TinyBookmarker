@@ -544,3 +544,94 @@ def test_create_collection_rejects_duplicate_name(client):
     resp = client.post("/collections/new", data={"name": "Unique"})
     assert resp.status_code == 400
     assert "already exists" in resp.get_data(as_text=True)
+
+
+# ── Tags screen ───────────────────────────────────────────────────────────────
+
+def test_tags_empty_state(client):
+    resp = client.get("/tags")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Tags" in body
+    assert "No tags yet" in body
+    # Empty state must distinguish tags from collections.
+    assert "collections" in body.lower()
+
+
+def test_tags_sidebar_link_active_on_tags_page(client):
+    body = client.get("/tags").get_data(as_text=True)
+    # The sidebar "Tags" link must carry the active class on this page.
+    assert 'class="active"' in body
+    assert 'href="/tags"' in body
+
+
+def test_tags_shows_bookmark_count(client):
+    # Create tags by saving bookmarks with them.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/t1", "title": "One", "tags": "python"},
+    )
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/t2", "title": "Two", "tags": "python"},
+    )
+    body = client.get("/tags").get_data(as_text=True)
+    assert "python" in body
+    assert "2 bookmarks" in body
+
+
+def test_tags_no_create_form(client):
+    # Tags screen intentionally has no standalone create form.
+    body = client.get("/tags").get_data(as_text=True)
+    # There must be no POST target for /tags/new or similar on this page.
+    assert 'action="/tags/new"' not in body
+    assert 'name="name"' not in body
+
+
+def test_rename_tag(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/tr", "title": "Tagged", "tags": "oldlabel"},
+    )
+    resp = client.post("/tags/1/edit", data={"name": "newlabel"}, follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "newlabel" in body
+    assert "Tag renamed" in body
+    assert "oldlabel" not in body
+
+
+def test_delete_tag_removes_tag_not_bookmarks(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/td", "title": "Keep Me", "tags": "temporary"},
+    )
+    resp = client.post("/tags/1/delete", follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Tag deleted" in body
+    assert "temporary" not in body
+    # The bookmark must still exist.
+    bm_body = client.get("/bookmarks").get_data(as_text=True)
+    assert "Keep Me" in bm_body
+
+
+def test_rename_tag_rejects_empty_name(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/te", "title": "Tagged", "tags": "notempty"},
+    )
+    resp = client.post("/tags/1/edit", data={"name": ""})
+    assert resp.status_code == 400
+    assert "required" in resp.get_data(as_text=True).lower()
+
+
+def test_rename_tag_rejects_duplicate_name(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/td1", "title": "A", "tags": "alpha, beta"},
+    )
+    # Try renaming "alpha" (id=1) to "beta" — should fail.
+    resp = client.post("/tags/1/edit", data={"name": "beta"})
+    assert resp.status_code == 400
+    assert "already exists" in resp.get_data(as_text=True)

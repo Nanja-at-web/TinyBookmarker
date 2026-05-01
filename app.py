@@ -282,6 +282,56 @@ def register_routes(app: Flask) -> None:
         flash("Collection deleted.", "success")
         return redirect(url_for("collections"))
 
+    # ── Tags ─────────────────────────────────────────────────────────────────
+
+    @app.get("/tags")
+    def tags():
+        conn = db.get_db()
+        return render_template(
+            "tags.html",
+            page="tags",
+            page_title="Tags",
+            tags=bm.list_tags_with_counts(conn),
+        )
+
+    @app.route("/tags/<int:tag_id>/edit", methods=["GET", "POST"])
+    def edit_tag(tag_id: int):
+        conn = db.get_db()
+        tag = bm.get_tag(conn, tag_id)
+        if tag is None:
+            abort(404)
+        if request.method == "POST":
+            new_name = (request.form.get("name") or "").strip()
+            error = bm.rename_tag(conn, tag_id, new_name)
+            if error:
+                return render_template(
+                    "tag_rename.html",
+                    page="tags",
+                    page_title="Rename Tag",
+                    tag=tag,
+                    form_name=new_name,
+                    error=error,
+                ), 400
+            flash("Tag renamed.", "success")
+            return redirect(url_for("tags"))
+        return render_template(
+            "tag_rename.html",
+            page="tags",
+            page_title="Rename Tag",
+            tag=tag,
+            form_name=tag["name"],
+            error=None,
+        )
+
+    @app.post("/tags/<int:tag_id>/delete")
+    def delete_tag(tag_id: int):
+        conn = db.get_db()
+        if bm.get_tag(conn, tag_id) is None:
+            abort(404)
+        bm.delete_tag(conn, tag_id)
+        flash("Tag deleted.", "success")
+        return redirect(url_for("tags"))
+
 
 def _is_filtered(params: dict) -> bool:
     """Return True if the user has applied a search or filter to the current view.
