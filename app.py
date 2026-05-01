@@ -332,6 +332,19 @@ def register_routes(app: Flask) -> None:
         flash("Tag deleted.", "success")
         return redirect(url_for("tags"))
 
+    # ── Duplicates ────────────────────────────────────────────────────────────
+
+    @app.get("/duplicates")
+    def duplicates():
+        conn = db.get_db()
+        groups = bm.find_duplicate_groups(conn)
+        return render_template(
+            "duplicates.html",
+            page="duplicates",
+            page_title="Duplicates",
+            groups=groups,
+        )
+
 
 def _is_filtered(params: dict) -> bool:
     """Return True if the user has applied a search or filter to the current view.

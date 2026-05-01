@@ -635,3 +635,93 @@ def test_rename_tag_rejects_duplicate_name(client):
     resp = client.post("/tags/1/edit", data={"name": "beta"})
     assert resp.status_code == 400
     assert "already exists" in resp.get_data(as_text=True)
+
+
+# ── Duplicates screen ─────────────────────────────────────────────────────────
+
+def _insert_bookmark(app, url, title=""):
+    """Insert a bookmark directly into the DB, bypassing the duplicate-check route."""
+    import sqlite3 as _sqlite3
+    conn = _sqlite3.connect(app.config["DATABASE"])
+    conn.execute(
+        "INSERT INTO bookmarks (url, title) VALUES (?, ?)",
+        (url, title or url),
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_duplicates_empty_state(client):
+    resp = client.get("/duplicates")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Duplicates" in body
+    assert "No duplicates found" in body
+    # Empty state must mention exact URL matching so users understand the scope.
+    assert "exact" in body.lower()
+
+
+def test_duplicates_sidebar_link_active_on_duplicates_page(client):
+    body = client.get("/duplicates").get_data(as_text=True)
+    assert 'class="active"' in body
+    assert 'href="/duplicates"' in body
+
+
+def test_duplicates_shows_group_for_exact_url_match(client, app):
+    _insert_bookmark(app, "https://dup.example.com/page", "First Save")
+    _insert_bookmark(app, "https://dup.example.com/page", "Second Save")
+
+    body = client.get("/duplicates").get_data(as_text=True)
+    assert "First Save" in body
+    assert "Second Save" in body
+    assert "https://dup.example.com/page" in body
+    # Group count must be visible.
+    assert "2 bookmarks" in body
+
+
+def test_duplicates_ignores_unique_urls(client, app):
+    _insert_bookmark(app, "https://unique-a.example.com/", "Unique A")
+    _insert_bookmark(app, "https://unique-b.example.com/", "Unique B")
+
+    body = client.get("/duplicates").get_data(as_text=True)
+    assert "No duplicates found" in body
+    assert "Unique A" not in body
+    assert "Unique B" not in body
+
+
+def test_duplicates_does_not_group_different_urls(client, app):
+    # Superficially similar but distinct URLs must not be grouped.
+    _insert_bookmark(app, "https://example.com/page", "HTTP version")
+    _insert_bookmark(app, "https://example.com/page/", "Trailing slash version")
+
+    body = client.get("/duplicates").get_data(as_text=True)
+    assert "No duplicates found" in body
+
+
+def test_duplicates_delete_returns_to_duplicates_page(client, app):
+    _insert_bookmark(app, "https://dup2.example.com/", "Alpha")
+    _insert_bookmark(app, "https://dup2.example.com/", "Beta")
+
+    # Delete bookmark id=1 via the existing delete route with next=/duplicates.
+    resp = client.post(
+        "/bookmarks/1/delete",
+        data={"next": "/duplicates"},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # After deleting one, the group disappears (only one left — no longer a duplicate).
+    assert "No duplicates found" in body
+    # The surviving bookmark must still exist in All Bookmarks.
+    bm_body = client.get("/bookmarks").get_data(as_text=True)
+    assert "Beta" in bm_body
+
+
+def test_duplicates_shows_edit_link_for_each_bookmark(client, app):
+    _insert_bookmark(app, "https://dup3.example.com/", "Edit Test A")
+    _insert_bookmark(app, "https://dup3.example.com/", "Edit Test B")
+
+    body = client.get("/duplicates").get_data(as_text=True)
+    # Both bookmarks must have an edit link.
+    assert "/bookmarks/1/edit" in body
+    assert "/bookmarks/2/edit" in body

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block main %}
+<header class="page-header">
+  <h1>Duplicates</h1>
+  <p class="page-subtitle">Review bookmarks that share the same URL.</p>
+</header>
+
+{% if groups %}
+  <p class="dup-intro">Each group shares an identical URL. Keep the bookmark you want and delete the rest.</p>
+
+  <div class="dup-groups">
+    {% for group in groups %}
+    <div class="dup-group">
+      <div class="dup-group-header">
+        <span class="dup-url" title="{{ group[0].url }}">{{ group[0].url }}</span>
+        <span class="dup-count">{{ group|length }} bookmarks</span>
+      </div>
+      <ul class="dup-items">
+        {% for b in group %}
+        <li class="dup-item">
+          <div class="dup-item-main">
+            <div class="dup-title-row">
+              <a class="dup-title" href="{{ url_for('edit_bookmark', bookmark_id=b.id) }}">{{ b.title or b.url }}</a>
+              {% if b.is_favorite %}<span class="dup-fav" title="Favorite">★</span>{% endif %}
+            </div>
+            <div class="dup-meta">
+              <span class="bookmark-domain">{{ b.domain }}</span>
+              {% for c in b.collections %}<span class="badge badge-collection">{{ c.name }}</span>{% endfor %}
+              {% for t in b.tags %}<span class="badge badge-tag">{{ t.name }}</span>{% endfor %}
+              {% if b.created_at %}<span class="dup-date">Saved {{ b.created_at[:10] }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="dup-item-actions">
+            <a class="btn btn-link" href="{{ url_for('edit_bookmark', bookmark_id=b.id) }}">Edit</a>
+            <form method="post"
+                  action="{{ url_for('delete_bookmark', bookmark_id=b.id) }}"
+                  onsubmit="return confirm('Delete this bookmark? This cannot be undone.');">
+              <input type="hidden" name="next" value="{{ url_for('duplicates') }}">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <section class="empty-state">
+    <h2>No duplicates found</h2>
+    <p>All your bookmarks have unique URLs. When duplicates appear, you can review and clean them up here.</p>
+    <p class="empty-note">Duplicates are detected by exact URL match.</p>
+  </section>
+{% endif %}
+{% endblock %}

@@ -144,6 +144,8 @@ h2 { font-size: 1rem; }
   color: var(--text-faint);
   cursor: default;
 }
+/* Stubs in any group stay faint regardless of whether the parent is muted. */
+.sidebar-soon { color: var(--text-faint); cursor: default; }
 
 /* Main */
 .main {
@@ -621,3 +623,102 @@ html[data-theme="dark"] .badge-collection { background: #1c2b42; color: #6b9fe8;
 html[data-theme="dark"] .badge-tag        { background: #22193a; color: #9b80d4; }
 html[data-theme="dark"] .icon-btn-on       { color: #e8b83a; }
 html[data-theme="dark"] .icon-btn-on:hover { color: #d4a428; }
+
+/* ── Duplicate review groups ───────────────────────────────────────────────
+   Calm, card-per-group layout. Each group is a bordered card with a muted
+   header showing the shared URL and a plain list of bookmarks below.      */
+
+.dup-intro {
+  color: var(--text-muted);
+  font-size: .9rem;
+  margin: -.25rem 0 1.25rem;
+}
+.dup-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.dup-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.dup-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .55rem .85rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.dup-url {
+  font-size: .8rem;
+  color: var(--text-muted);
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+.dup-count {
+  font-size: .78rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dup-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.dup-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem .85rem;
+  border-top: 1px solid var(--border);
+}
+.dup-item:first-child { border-top: 0; }
+.dup-item-main { min-width: 0; flex: 1; }
+.dup-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: .35rem;
+}
+.dup-title {
+  font-weight: 600;
+  font-size: .95rem;
+  color: var(--text);
+  word-break: break-word;
+}
+.dup-title:hover { color: var(--accent); text-decoration: none; }
+.dup-fav {
+  color: var(--warn);
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+.dup-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .3rem;
+}
+.dup-date {
+  font-size: .78rem;
+  color: var(--text-faint);
+}
+.dup-item-actions {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex-shrink: 0;
+  padding-top: .1rem;
+}
+/* Quiet edit link — matches the bookmark-row edit pattern. */
+.dup-item-actions .btn-link {
+  color: var(--text-faint);
+  font-size: .85rem;
+  padding: .45rem .2rem;
+}
+.dup-item-actions .btn-link:hover { color: var(--accent); text-decoration: none; }

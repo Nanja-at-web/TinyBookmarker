@@ -352,6 +352,53 @@ def delete_tag(db: sqlite3.Connection, tag_id: int) -> None:
     db.commit()
 
 
+def find_duplicate_groups(db: sqlite3.Connection) -> list[list[dict]]:
+    """Return groups of bookmarks that share the exact same URL.
+
+    Only groups with two or more bookmarks are returned.
+    Within each group bookmarks are ordered oldest-first (by created_at, then id).
+    Groups are ordered alphabetically by URL.
+    Each bookmark dict includes id, url, title, is_favorite, created_at,
+    domain, collections and tags.
+    """
+    rows = db.execute(
+        """
+        SELECT b.id, b.url, b.title, b.is_favorite, b.created_at
+          FROM bookmarks b
+         WHERE b.url IN (
+               SELECT url FROM bookmarks GROUP BY url HAVING COUNT(*) > 1
+               )
+         ORDER BY b.url, b.created_at ASC, b.id ASC
+        """
+    ).fetchall()
+
+    if not rows:
+        return []
+
+    bookmarks = [dict(r) for r in rows]
+    ids = [b["id"] for b in bookmarks]
+    _attach_assignments(db, bookmarks, ids)
+    for b in bookmarks:
+        b["domain"] = domain_of(b["url"])
+
+    # Group consecutive rows by URL (they are already sorted by URL).
+    groups: list[list[dict]] = []
+    current_url: str | None = None
+    current_group: list[dict] = []
+    for b in bookmarks:
+        if b["url"] != current_url:
+            if current_group:
+                groups.append(current_group)
+            current_url = b["url"]
+            current_group = [b]
+        else:
+            current_group.append(b)
+    if current_group:
+        groups.append(current_group)
+
+    return groups
+
+
 def get_or_create_collection(db: sqlite3.Connection, name: str) -> int:
     name = name.strip()
     row = db.execute("SELECT id FROM collections WHERE name = ?", (name,)).fetchone()

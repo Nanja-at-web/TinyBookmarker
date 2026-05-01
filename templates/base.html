@@ -53,10 +53,10 @@
         </ul>
       </div>
 
-      <div class="sidebar-group sidebar-group-muted">
+      <div class="sidebar-group">
         <h2>Maintenance</h2>
         <ul>
-          <li><span class="sidebar-soon">Duplicates</span></li>
+          <li><a class="{{ 'active' if page == 'duplicates' else '' }}" href="{{ url_for('duplicates') }}">Duplicates</a></li>
           <li><span class="sidebar-soon">Import / Export</span></li>
         </ul>
       </div>
