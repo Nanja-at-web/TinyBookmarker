@@ -65,149 +65,244 @@ A user should be able to:
 - use a basic browser roundtrip flow
 - run the system easily in a lightweight self-host setup
 
-## Phase 0 — Product foundation
+---
+
+## Phase 0 — Product foundation ✅ DONE
 
 ### Goal
 Define the product before growing it.
 
-### Deliverables
-- final product sentence
-- non-goals
-- stable object model
-- README
-- CLAUDE.md
-- AGENTS.md
-- one-pager
-- roadmap
-- initial wireframe / screen structure
+### Completed
+- Final product sentence
+- Non-goals defined
+- Stable object model (schema.sql: bookmarks, collections, tags, bookmark_collections, bookmark_tags)
+- README, CLAUDE.md, AGENTS.md
+- PRODUCT_ONE_PAGER.md, ROADMAP.md
+- UI_WIREFRAME.md, SCREEN_SPEC.md, LESSONS_LEARNED.md
 
-### Done when
-- the product can be explained clearly in one sentence
-- main concepts do not blur together
-- early UI structure is agreed before major implementation
+---
 
-## Phase 1 — Core bookmark workspace
+## Phase 1 — Core bookmark workspace ✅ ~DONE
 
 ### Goal
 Make the daily bookmark area feel complete and clear.
 
-### Included
-- All Bookmarks
-- Quick Add / + New Bookmark
-- search
-- filter
-- sorting
-- list/grid display
-- bookmark detail / edit
-- empty states
-- clear primary and secondary actions
+### Completed
+- All Bookmarks (route, toolbar, list, empty states)
+- Quick Add / + New Bookmark (form, URL prefill via `?url=`)
+- Search (full-text: title, URL, description, collection name, tag name)
+- Filter (unsorted, collection, tag)
+- Sorting (newest / oldest / title)
+- Bookmark detail / edit / delete / toggle-favorite
+- Empty states (real-empty vs. no-results, distinct copy)
+- Favorites view (dedicated route, own empty states)
+- Duplicate preflight on save (exact URL match, link to existing)
+- Dark mode (`prefers-color-scheme: dark`, manual theme toggle)
+- Responsive layout (basic sidebar collapse)
+
+### Optional — low priority, does not block Phase 2
+- TASK-101: Grid display
+  - Grid-view as alternative to list-view
+  - Priority: low · Complexity: medium
+  - Recommendation: defer to Phase 7
 
 ### Done when
-- users can immediately understand where daily bookmark work happens
-- the main workspace feels focused, not cluttered
+- ✅ Users can immediately understand where daily bookmark work happens
+- ✅ The main workspace feels focused, not cluttered
 
-## Phase 2 — Favorites, collections and tags
+---
+
+## Phase 2 — Favorites, collections and tags 🔄 IN PROGRESS
 
 ### Goal
 Turn organization into real working surfaces.
 
-### Included
-- Favorites view
-- collection view
-- tag view
-- create / rename / delete collections
-- create / rename / delete tags
-- assign / unassign bookmarks
-- bulk actions
+### Completed
+- Favorites view (dedicated `/favorites` route)
+- Inline collection create in bookmark form (`new_collections` field, `get_or_create_collection()`)
+- Inline tag create in bookmark form (`tags` field, `get_or_create_tag()`)
+- Collection and tag assignment / removal in bookmark edit form
+
+### Open tasks
+
+- TASK-201: Collections screen
+  - Routes: `GET /collections`, `POST /collections/new`, `POST /collections/<id>/rename`, `POST /collections/<id>/delete`
+  - Show bookmark count per collection
+  - Sidebar link "Collections" active (remove `sidebar-soon` stub)
+  - Acceptance criteria: full CRUD works; sidebar link active with correct active-state
+  - Priority: **critical** · Complexity: medium · Dependencies: none (data layer already complete)
+
+- TASK-202: Tags screen
+  - Routes: `GET /tags`, `POST /tags/<id>/rename`, `POST /tags/<id>/delete`
+  - Show bookmark count per tag
+  - Sidebar link "Tags" active
+  - Acceptance criteria: full CRUD works; sidebar link active
+  - Priority: **high** · Complexity: medium · Dependencies: after TASK-201
+
+- TASK-203: Bulk actions
+  - Checkbox selection in bookmark rows
+  - Bulk: add to collection, add tag, favorite / unfavorite
+  - Acceptance criteria: multi-select works; at least 3 bulk operations
+  - Priority: medium · Complexity: high · Dependencies: TASK-201 + TASK-202
 
 ### Done when
-- users can organize bookmarks without guessing what each concept means
+- Users can manage collections and tags without going through a bookmark form
 
-## Phase 3 — Duplicate review and cleanup
+---
+
+## Phase 3 — Duplicate review and cleanup 🔄 PARTIAL
 
 ### Goal
 Make duplicate handling a first-class product strength.
 
-### Included
-- duplicate preflight on save
-- duplicate review area
-- exact and normalized match handling
-- dry-run
-- safe merge
-- undo / history
-- review-oriented microcopy
+### Completed
+- Duplicate preflight on save (exact URL match, blocks save, shows link to existing)
+
+### Open tasks
+
+- TASK-301: URL normalisation
+  - `normalize_url()` function in `bookmarks.py`
+  - Handles: http/https, trailing slash, `www.` prefix, common query-param variants
+  - Acceptance criteria: normalised variants are detected as duplicates
+  - Priority: medium · Complexity: medium · Dependencies: none
+
+- TASK-302: Duplicate review area
+  - Route `GET /duplicates` — show duplicate groups (exact URL match to start)
+  - keep / discard UX with confirmation before any delete
+  - Sidebar link "Duplicates" active
+  - Acceptance criteria: groups visible; safe delete with confirmation; empty state explained
+  - Priority: **high** · Complexity: high · Dependencies: Phase 2 stable
+
+- TASK-303: Dry-run, safe merge, undo / history
+  - Dry-run previews what would be deleted
+  - Safe merge preserves chosen bookmark's metadata
+  - Undo for last action
+  - Acceptance criteria: no blind bulk delete possible
+  - Priority: medium · Complexity: high · Dependencies: TASK-302
 
 ### Done when
-- users can clean up duplicates with confidence
+- Users can clean up duplicates with confidence
 
-## Phase 4 — Import / export / migration
+---
+
+## Phase 4 — Import / export / migration ⬜ OPEN
 
 ### Goal
 Make migration a strong reason to use the product.
 
-### Included
-- HTML import
-- browser-aware import paths
-- export
-- preview before apply
-- result summary
-- provenance / source visibility
-- migration-friendly empty states and guidance
+### Technical prerequisite
+- TASK-TECH-01: Pagination in `list_bookmarks()` — necessary before import can load large libraries
+
+### Tasks
+
+- TASK-401: HTML import (Netscape / browser export format)
+  - File upload, parse, preview-before-apply, duplicate handling during import, result summary
+  - Acceptance criteria: imports a standard browser HTML export without data loss
+  - Priority: medium · Complexity: medium-high
+
+- TASK-402: Export (HTML + JSON)
+  - All bookmarks exportable; collections and tags preserved
+  - Acceptance criteria: exported file re-importable without data loss
+  - Priority: medium · Complexity: low-medium · Dependencies: after TASK-401
+
+- TASK-403: Provenance / source visibility
+  - Show import source on bookmarks
+  - Priority: low · Dependencies: TASK-401
 
 ### Done when
-- a user can move bookmarks in or out without confusion
+- A user can move bookmarks in or out without confusion
 
-## Phase 5 — Browser roundtrip basics
+---
+
+## Phase 5 — Browser roundtrip basics ⬜ OPEN
 
 ### Goal
 Support practical browser-to-server and server-to-browser workflows.
 
-### Included
-- companion basics
-- save current tab
-- browser bookmark preview
-- restore preview
-- safe apply flow
-- conflict/duplicate visibility
-- connection status
+### Prerequisite
+- TASK-500: Companion design document
+  - Technology decision: browser extension vs. bookmarklet vs. API-only
+  - Must be written before implementation starts
+
+### Tasks (after design decision)
+- TASK-501: Save current tab
+- TASK-502: Browser bookmark preview
+- TASK-503: Restore preview and safe apply flow
+- TASK-504: Conflict / duplicate visibility in roundtrip
+- TASK-505: Connection status
 
 ### Done when
-- the browser companion feels like a practical extension of the bookmark product
+- The browser companion feels like a practical extension of the bookmark product
 
-## Phase 6 — Self-hosting quality
+---
+
+## Phase 6 — Self-hosting quality ⬜ OPEN
 
 ### Goal
 Make the product practical to deploy, update and maintain.
 
-### Included
-- install flow
-- update flow
-- helper scripts
-- health/version/build visibility
-- backup/restore basics
-- Proxmox-friendly path
-- documentation for self-hosting
+### Tasks
+
+- TASK-601: Docker setup + basic documentation
+  - Dockerfile, docker-compose.yml, install instructions in README
+  - Priority: medium · Complexity: medium
+
+- TASK-602: Health / version route (`GET /health`)
+  - Returns version, uptime, db status
+  - Priority: low · Complexity: low
+
+- TASK-603: Backup / restore documentation
+  - Priority: low · Complexity: low
+
+- TASK-604: Proxmox-friendly install path
+  - Priority: low · Complexity: medium
 
 ### Done when
-- installation and updates are routine, not fragile
+- Installation and updates are routine, not fragile
 
-## Phase 7 — Product polish
+---
+
+## Phase 7 — Product polish ⬜ ONGOING
 
 ### Goal
 Tighten clarity, consistency and trust.
 
-### Included
-- naming review
-- empty state review
-- panel title review
-- microcopy refinement
-- visual hierarchy refinement
-- consistency across screens
-- version/build consistency
-- final cleanup of rough edges
+### Approach
+Revisit after each major phase (Phase 2, 3, 4) is complete.
+
+### Areas
+- Naming review across all screens
+- Empty state review for new screens
+- Panel title and subtitle review
+- Microcopy refinement
+- Visual hierarchy consistency
+- Version / build consistency
+- Final cleanup of rough edges
+
+### Also deferred here
+- TASK-101: Grid display (optional)
 
 ### Done when
-- the product feels coherent and intentionally designed
+- The product feels coherent and intentionally designed
+
+---
+
+## Technical debt (tracked separately from phases)
+
+These are not features — they are quality and safety improvements.
+Address before or alongside the phases indicated.
+
+| Task | Description | Before | Priority |
+|---|---|---|---|
+| TASK-TECH-01 | Pagination in `list_bookmarks()` — LIMIT/OFFSET | Phase 4 | medium |
+| TASK-TECH-02 | CSRF protection (Flask-WTF or manual token) | Phase 6 | medium-high |
+| TASK-TECH-03 | Auth scope decision documented (no-auth vs. HTTP Basic) | Phase 2 complete | high (if public) |
+| TASK-TECH-04 | URL normalisation — see also TASK-301 | Phase 3 | medium |
+| TASK-TECH-05 | WAL mode in `db.py _connect()` | Phase 4 | low-medium |
+| TASK-TECH-06 | Error templates (404.html, 500.html) | Phase 7 | low |
+| TASK-TECH-07 | Pin requirements.txt; add requirements-dev.txt with pytest | Phase 6 | low |
+
+---
 
 ## Explicitly later / optional
 
@@ -216,10 +311,12 @@ These may be explored later, but should not drive the early product:
 - reader mode
 - archive-first workflows
 - AI-heavy features
-- screenshots/PDF as a core product axis
+- screenshots / PDF as a core product axis
 - team-first collaboration
 - enterprise provisioning
 - heavy service architecture
+
+---
 
 ## Success criteria
 
