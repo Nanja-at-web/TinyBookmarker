@@ -52,6 +52,7 @@ def register_routes(app: Flask) -> None:
             collections=bm.list_collections(conn),
             tags=bm.list_tags(conn),
             filters=params,
+            is_filtered=_is_filtered(params),
             empty_kind="all",
         )
 
@@ -70,6 +71,7 @@ def register_routes(app: Flask) -> None:
             collections=bm.list_collections(conn),
             tags=bm.list_tags(conn),
             filters=params,
+            is_filtered=_is_filtered(params),
             empty_kind="favorites",
         )
 
@@ -195,6 +197,20 @@ def register_routes(app: Flask) -> None:
         if result is None:
             abort(404)
         return redirect(request.form.get("next") or url_for("all_bookmarks"))
+
+
+def _is_filtered(params: dict) -> bool:
+    """Return True if the user has applied a search or filter to the current view.
+
+    Sort and the page-identity 'favorites_only' flag are intentionally excluded —
+    they don't change the scope, only its presentation or its base set.
+    """
+    return bool(
+        params.get("query")
+        or params.get("inbox_only")
+        or params.get("collection_id")
+        or params.get("tag_id")
+    )
 
 
 def _parse_list_params(args) -> dict:

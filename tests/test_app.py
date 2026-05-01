@@ -235,6 +235,69 @@ def test_edit_can_create_collection_inline(client):
     assert "Research" in resp.get_data(as_text=True)
 
 
+def test_all_bookmarks_no_results_state_when_search_misses(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/a", "title": "Alpha"},
+    )
+    body = client.get("/bookmarks?q=zzznotfound").get_data(as_text=True)
+    # No-results state — distinct from the real empty state.
+    assert "No bookmarks match this view" in body
+    assert "Clear search and filters" in body
+    # The first-run empty-library copy must NOT appear.
+    assert "Your bookmark library is empty" not in body
+    assert "+ New Bookmark" not in body or body.count("+ New Bookmark") == 1  # only the topbar instance
+
+
+def test_all_bookmarks_real_empty_state_when_truly_empty(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # Real empty state — first-run guidance.
+    assert "Your bookmark library is empty" in body
+    # No-results copy must NOT appear.
+    assert "No bookmarks match this view" not in body
+    assert "Clear search and filters" not in body
+
+
+def test_favorites_no_results_state_when_search_misses(client):
+    client.post(
+        "/bookmarks/new",
+        data={
+            "url": "https://example.com/f",
+            "title": "Faved",
+            "is_favorite": "on",
+        },
+    )
+    body = client.get("/favorites?q=zzznotfound").get_data(as_text=True)
+    assert "No bookmarks match this view" in body
+    assert "Clear search and filters" in body
+    # The "what favorites are" copy must NOT appear.
+    assert "No favorites yet" not in body
+
+
+def test_favorites_real_empty_state_even_when_other_bookmarks_exist(client):
+    # Creating a non-favorite bookmark must not turn the favorites screen
+    # into a no-results state — favorites is its own scope.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/p", "title": "Plain"},
+    )
+    body = client.get("/favorites").get_data(as_text=True)
+    assert "No favorites yet" in body
+    assert "do not replace collections" in body
+    assert "No bookmarks match this view" not in body
+    assert "Clear search and filters" not in body
+
+
+def test_no_results_clear_link_returns_to_unfiltered_view(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/k", "title": "Keep"},
+    )
+    body = client.get("/bookmarks?q=zzz").get_data(as_text=True)
+    # The clear-link points back to the bare list URL.
+    assert 'href="/bookmarks"' in body
+
+
 def test_inline_collection_supports_multiple_comma_separated(client):
     client.post(
         "/bookmarks/new",

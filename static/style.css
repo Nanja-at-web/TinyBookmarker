@@ -308,6 +308,17 @@ h2 { font-size: 1rem; }
 .empty-state .btn { margin-top: .75rem; }
 .empty-note { font-size: .85rem; color: var(--text-faint); margin-top: .75rem; }
 
+/* No-results variant: a transient state, visually quieter than real empty. */
+.empty-state-no-results {
+  padding: 1.5rem 1rem;
+}
+.empty-state-no-results h2 {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.empty-state-no-results p { color: var(--text-muted); }
+
 /* Form */
 .bookmark-form {
   max-width: 640px;

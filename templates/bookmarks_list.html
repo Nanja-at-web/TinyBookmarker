@@ -94,6 +94,18 @@
       </li>
     {% endfor %}
   </ul>
+{% elif is_filtered %}
+  <section class="empty-state empty-state-no-results" aria-live="polite">
+    <h2>No bookmarks match this view</h2>
+    <p>
+      {% if empty_kind == 'favorites' %}
+        Your search or filter returned no favorites. Try a different search term, or clear it to see all your favorites.
+      {% else %}
+        Your search or filter returned no bookmarks. Try a different search term, or clear it to see your full library.
+      {% endif %}
+    </p>
+    <a class="btn btn-secondary" href="{{ url_for(request.endpoint) }}">Clear search and filters</a>
+  </section>
 {% else %}
   <section class="empty-state">
     {% if empty_kind == 'favorites' %}
