@@ -352,6 +352,14 @@ def delete_tag(db: sqlite3.Connection, tag_id: int) -> None:
     db.commit()
 
 
+def count_bookmarks_with_url(db: sqlite3.Connection, url: str) -> int:
+    """Return the number of bookmarks that have this exact URL."""
+    row = db.execute(
+        "SELECT COUNT(*) FROM bookmarks WHERE url = ?", (url,)
+    ).fetchone()
+    return row[0]
+
+
 def find_duplicate_groups(db: sqlite3.Connection) -> list[list[dict]]:
     """Return groups of bookmarks that share the exact same URL.
 

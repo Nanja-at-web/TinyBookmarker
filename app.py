@@ -345,6 +345,25 @@ def register_routes(app: Flask) -> None:
             groups=groups,
         )
 
+    @app.post("/duplicates/<int:bookmark_id>/delete")
+    def delete_duplicate(bookmark_id: int):
+        conn = db.get_db()
+        bookmark = bm.get_bookmark(conn, bookmark_id)
+        if bookmark is None:
+            abort(404)
+        # Safety: block deletion if this is the last bookmark with this URL.
+        # The duplicate review area must never silently remove the final copy.
+        if bm.count_bookmarks_with_url(conn, bookmark["url"]) <= 1:
+            flash(
+                "This is the only remaining bookmark with this URL. "
+                "Open it in the edit view to delete it directly.",
+                "error",
+            )
+            return redirect(url_for("duplicates"))
+        bm.delete_bookmark(conn, bookmark_id)
+        flash("Bookmark deleted.", "success")
+        return redirect(url_for("duplicates"))
+
 
 def _is_filtered(params: dict) -> bool:
     """Return True if the user has applied a search or filter to the current view.

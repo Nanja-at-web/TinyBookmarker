@@ -725,3 +725,31 @@ def test_duplicates_shows_edit_link_for_each_bookmark(client, app):
     # Both bookmarks must have an edit link.
     assert "/bookmarks/1/edit" in body
     assert "/bookmarks/2/edit" in body
+
+
+def test_delete_duplicate_succeeds_when_another_copy_remains(client, app):
+    _insert_bookmark(app, "https://safe.example.com/", "Copy One")
+    _insert_bookmark(app, "https://safe.example.com/", "Copy Two")
+
+    resp = client.post("/duplicates/1/delete", follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Bookmark deleted" in body
+    # The surviving copy must still exist.
+    bm_body = client.get("/bookmarks").get_data(as_text=True)
+    assert "Copy Two" in bm_body
+
+
+def test_delete_duplicate_blocked_when_last_copy(client, app):
+    # Insert only one bookmark with a URL that has no duplicate.
+    # Then try to delete it via the safe duplicate-delete route.
+    _insert_bookmark(app, "https://last.example.com/", "Only Copy")
+
+    resp = client.post("/duplicates/1/delete", follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # Must show an error flash — deletion was blocked.
+    assert "only remaining" in body
+    # The bookmark must still exist.
+    bm_body = client.get("/bookmarks").get_data(as_text=True)
+    assert "Only Copy" in bm_body
