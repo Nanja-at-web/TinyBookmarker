@@ -249,6 +249,64 @@ def list_collections(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM collections ORDER BY LOWER(name)")]
 
 
+def list_collections_with_counts(db: sqlite3.Connection) -> list[dict]:
+    """Return all collections with their bookmark counts, sorted alphabetically."""
+    rows = db.execute(
+        """
+        SELECT c.id, c.name, COUNT(bc.bookmark_id) AS bookmark_count
+          FROM collections c
+          LEFT JOIN bookmark_collections bc ON bc.collection_id = c.id
+         GROUP BY c.id, c.name
+         ORDER BY LOWER(c.name)
+        """
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_collection(db: sqlite3.Connection, collection_id: int) -> dict | None:
+    """Return {id, name} for a collection, or None if not found."""
+    row = db.execute(
+        "SELECT id, name FROM collections WHERE id = ?", (collection_id,)
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def create_collection(db: sqlite3.Connection, name: str) -> tuple[int | None, str | None]:
+    """Create a new collection. Returns (id, None) on success or (None, error) on failure."""
+    name = name.strip()
+    if not name:
+        return None, "Collection name is required."
+    existing = db.execute(
+        "SELECT id FROM collections WHERE name = ?", (name,)
+    ).fetchone()
+    if existing:
+        return None, "A collection with this name already exists."
+    cur = db.execute("INSERT INTO collections (name) VALUES (?)", (name,))
+    db.commit()
+    return cur.lastrowid, None
+
+
+def rename_collection(db: sqlite3.Connection, collection_id: int, new_name: str) -> str | None:
+    """Rename a collection. Returns None on success or an error message on failure."""
+    new_name = new_name.strip()
+    if not new_name:
+        return "Collection name is required."
+    existing = db.execute(
+        "SELECT id FROM collections WHERE name = ? AND id != ?", (new_name, collection_id)
+    ).fetchone()
+    if existing:
+        return "A collection with this name already exists."
+    db.execute("UPDATE collections SET name = ? WHERE id = ?", (new_name, collection_id))
+    db.commit()
+    return None
+
+
+def delete_collection(db: sqlite3.Connection, collection_id: int) -> None:
+    """Delete a collection. Bookmarks are kept; only the collection grouping is removed (CASCADE)."""
+    db.execute("DELETE FROM collections WHERE id = ?", (collection_id,))
+    db.commit()
+
+
 def list_tags(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM tags ORDER BY LOWER(name)")]
 

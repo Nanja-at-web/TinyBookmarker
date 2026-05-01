@@ -338,6 +338,73 @@ h2 { font-size: 1rem; }
   text-decoration: none;
 }
 
+/* Collections list */
+.collection-create {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: 1.5rem;
+}
+.collection-create-row {
+  display: flex;
+  gap: .5rem;
+}
+.collection-create input {
+  flex: 1;
+  min-width: 0;
+  padding: .45rem .7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font: inherit;
+  background: var(--surface);
+}
+.collection-create input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.collection-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.collection-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .85rem 0;
+  border-top: 1px solid var(--border);
+}
+.collection-row:first-child { border-top: 0; }
+.collection-info { min-width: 0; flex: 1; }
+.collection-name {
+  font-weight: 600;
+  font-size: .95rem;
+  color: var(--text);
+}
+.collection-name:hover { color: var(--accent); text-decoration: none; }
+.collection-count {
+  margin-left: .5rem;
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+.collection-actions {
+  display: flex;
+  gap: .25rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+/* Rename link — quiet until hovered, matching bookmark-row Edit pattern. */
+.collection-rename-link {
+  color: var(--text-faint);
+  font-size: .85rem;
+  padding: .4rem .25rem;
+}
+.collection-rename-link:hover { color: var(--accent); text-decoration: none; }
+
+/* Small button variant for inline destructive actions. */
+.btn-sm { padding: .3rem .6rem; font-size: .85rem; }
+
 /* Buttons */
 .btn {
   display: inline-block;

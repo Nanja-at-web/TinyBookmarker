@@ -457,3 +457,90 @@ def test_theme_anti_flash_script_present(client):
     stylesheet_pos = body.find('rel="stylesheet"')
     antiflash_pos = body.find("tinybookmarker-theme")
     assert antiflash_pos < stylesheet_pos, "anti-flash script must appear before the stylesheet link"
+
+
+# ── Collections screen ────────────────────────────────────────────────────────
+
+def test_collections_empty_state(client):
+    resp = client.get("/collections")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Collections" in body
+    assert "No collections yet" in body
+    # Empty state must distinguish collections from tags.
+    assert "tags" in body.lower()
+
+
+def test_collections_sidebar_link_active_on_collections_page(client):
+    body = client.get("/collections").get_data(as_text=True)
+    # The sidebar "Collections" link must carry the active class on this page.
+    assert 'class="active"' in body
+    # The active link must point to the collections route.
+    assert 'href="/collections"' in body
+
+
+def test_create_collection_via_collections_page(client):
+    resp = client.post("/collections/new", data={"name": "Research"}, follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Research" in body
+    assert "Collection created" in body
+
+
+def test_collections_shows_bookmark_count(client):
+    # Create a collection by saving a bookmark into it.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/c1", "title": "One", "new_collections": "Science"},
+    )
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/c2", "title": "Two", "new_collections": "Science"},
+    )
+    body = client.get("/collections").get_data(as_text=True)
+    assert "Science" in body
+    assert "2 bookmarks" in body
+
+
+def test_rename_collection(client):
+    client.post("/collections/new", data={"name": "OldName"})
+    # Find the collection id via the list.
+    resp = client.get("/collections")
+    assert "OldName" in resp.get_data(as_text=True)
+    # Rename via POST to /collections/1/edit.
+    resp = client.post("/collections/1/edit", data={"name": "NewName"}, follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "NewName" in body
+    assert "Collection renamed" in body
+    assert "OldName" not in body
+
+
+def test_delete_collection_removes_collection_not_bookmarks(client):
+    # Save a bookmark into a collection.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/del", "title": "Keep Me", "new_collections": "Temporary"},
+    )
+    # Delete the collection.
+    resp = client.post("/collections/1/delete", follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "Collection deleted" in body
+    assert "Temporary" not in body
+    # The bookmark must still exist in All Bookmarks.
+    bm_body = client.get("/bookmarks").get_data(as_text=True)
+    assert "Keep Me" in bm_body
+
+
+def test_create_collection_rejects_empty_name(client):
+    resp = client.post("/collections/new", data={"name": ""})
+    assert resp.status_code == 400
+    assert "required" in resp.get_data(as_text=True).lower()
+
+
+def test_create_collection_rejects_duplicate_name(client):
+    client.post("/collections/new", data={"name": "Unique"})
+    resp = client.post("/collections/new", data={"name": "Unique"})
+    assert resp.status_code == 400
+    assert "already exists" in resp.get_data(as_text=True)

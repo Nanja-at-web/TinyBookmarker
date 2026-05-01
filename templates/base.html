@@ -45,10 +45,10 @@
         </ul>
       </div>
 
-      <div class="sidebar-group sidebar-group-muted">
+      <div class="sidebar-group">
         <h2>Organization</h2>
         <ul>
-          <li><span class="sidebar-soon">Collections</span></li>
+          <li><a class="{{ 'active' if page == 'collections' else '' }}" href="{{ url_for('collections') }}">Collections</a></li>
           <li><span class="sidebar-soon">Tags</span></li>
         </ul>
       </div>

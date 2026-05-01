@@ -213,6 +213,75 @@ def register_routes(app: Flask) -> None:
             abort(404)
         return redirect(request.form.get("next") or url_for("all_bookmarks"))
 
+    # ── Collections ──────────────────────────────────────────────────────────
+
+    @app.get("/collections")
+    def collections():
+        conn = db.get_db()
+        return render_template(
+            "collections.html",
+            page="collections",
+            page_title="Collections",
+            collections=bm.list_collections_with_counts(conn),
+            create_error=None,
+            create_name="",
+        )
+
+    @app.post("/collections/new")
+    def new_collection():
+        conn = db.get_db()
+        name = (request.form.get("name") or "").strip()
+        _id, error = bm.create_collection(conn, name)
+        if error:
+            return render_template(
+                "collections.html",
+                page="collections",
+                page_title="Collections",
+                collections=bm.list_collections_with_counts(conn),
+                create_error=error,
+                create_name=name,
+            ), 400
+        flash("Collection created.", "success")
+        return redirect(url_for("collections"))
+
+    @app.route("/collections/<int:collection_id>/edit", methods=["GET", "POST"])
+    def edit_collection(collection_id: int):
+        conn = db.get_db()
+        collection = bm.get_collection(conn, collection_id)
+        if collection is None:
+            abort(404)
+        if request.method == "POST":
+            new_name = (request.form.get("name") or "").strip()
+            error = bm.rename_collection(conn, collection_id, new_name)
+            if error:
+                return render_template(
+                    "collection_rename.html",
+                    page="collections",
+                    page_title="Rename Collection",
+                    collection=collection,
+                    form_name=new_name,
+                    error=error,
+                ), 400
+            flash("Collection renamed.", "success")
+            return redirect(url_for("collections"))
+        return render_template(
+            "collection_rename.html",
+            page="collections",
+            page_title="Rename Collection",
+            collection=collection,
+            form_name=collection["name"],
+            error=None,
+        )
+
+    @app.post("/collections/<int:collection_id>/delete")
+    def delete_collection(collection_id: int):
+        conn = db.get_db()
+        if bm.get_collection(conn, collection_id) is None:
+            abort(404)
+        bm.delete_collection(conn, collection_id)
+        flash("Collection deleted.", "success")
+        return redirect(url_for("collections"))
+
 
 def _is_filtered(params: dict) -> bool:
     """Return True if the user has applied a search or filter to the current view.
