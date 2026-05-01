@@ -168,8 +168,9 @@ h2 { font-size: 1rem; }
 .flash-success { background: var(--success-bg); color: var(--success-text); }
 .flash-error   { background: var(--danger-bg); color: var(--danger); }
 
-/* Toolbar — two tiers: a count row and a refine row (selects).
-   Search lives in the topbar; the toolbar refines the already-loaded view. */
+/* Toolbar — two tiers.
+   Primary: search is the dominant workspace tool, count sits quietly beside it.
+   Refine: filter selects are secondary; sort is pushed right and lightest of all. */
 .toolbar { margin: .25rem 0 1rem; }
 .toolbar-form {
   display: flex;
@@ -177,18 +178,35 @@ h2 { font-size: 1rem; }
   gap: .4rem;
 }
 
-/* Primary row: the result count, light and subordinate. */
+/* Primary row: search dominates. */
 .toolbar-primary {
   display: flex;
   align-items: center;
+  gap: .75rem;
+}
+.toolbar-primary input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  padding: .55rem .85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font: inherit;
+  font-size: 1rem;
+}
+.toolbar-primary input[type="search"]:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 .toolbar-count {
   color: var(--text-faint);
-  font-size: .82rem;
+  font-size: .8rem;
   margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-/* Refine row: smaller, lighter, visually subordinate. */
+/* Refine row: filter selects are secondary controls. */
 .toolbar-refine {
   display: flex;
   flex-wrap: wrap;
@@ -209,6 +227,19 @@ h2 { font-size: 1rem; }
   color: var(--text);
   border-color: var(--border-strong);
   outline: none;
+}
+
+/* Sort is the least important refine control — separate it from filters. */
+.select-sort {
+  margin-left: auto;
+  color: var(--text-faint);
+  border-color: transparent;
+  font-size: .82rem;
+}
+.select-sort:hover,
+.select-sort:focus {
+  color: var(--text-muted);
+  border-color: var(--border);
 }
 
 /* Small contextual hint shown when a state-style filter (e.g. Unsorted) is active. */
