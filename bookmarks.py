@@ -53,9 +53,17 @@ def list_bookmarks(
             "AND NOT EXISTS (SELECT 1 FROM bookmark_tags WHERE bookmark_id = b.id)"
         )
     if query:
-        where.append("(b.title LIKE ? OR b.url LIKE ? OR b.description LIKE ?)")
         like = f"%{query}%"
-        params.extend([like, like, like])
+        where.append(
+            "(b.title LIKE ? OR b.url LIKE ? OR b.description LIKE ?"
+            " OR EXISTS (SELECT 1 FROM bookmark_collections bc2"
+            "            JOIN collections c2 ON c2.id = bc2.collection_id"
+            "            WHERE bc2.bookmark_id = b.id AND c2.name LIKE ?)"
+            " OR EXISTS (SELECT 1 FROM bookmark_tags bt2"
+            "            JOIN tags t2 ON t2.id = bt2.tag_id"
+            "            WHERE bt2.bookmark_id = b.id AND t2.name LIKE ?))"
+        )
+        params.extend([like, like, like, like, like])
 
     if where:
         sql.append("WHERE " + " AND ".join(where))

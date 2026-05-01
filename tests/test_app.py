@@ -410,3 +410,29 @@ def test_edit_bookmark_allows_resave_unchanged_url(client):
     )
     assert resp.status_code == 200
     assert "Bookmark updated" in resp.get_data(as_text=True)
+
+
+def test_search_finds_bookmark_by_collection_name(client):
+    # Title contains no hint of the search term — match must come from the collection name.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/sc", "title": "Something Unrelated", "new_collections": "WorkProject"},
+    )
+    client.post("/bookmarks/new", data={"url": "https://example.com/sd", "title": "Decoy Bookmark"})
+
+    body = client.get("/bookmarks?q=WorkProject").get_data(as_text=True)
+    assert "Something Unrelated" in body
+    assert "Decoy Bookmark" not in body
+
+
+def test_search_finds_bookmark_by_tag_name(client):
+    # Title contains no hint of the search term — match must come from the tag name.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/st", "title": "Something Unrelated", "tags": "privacytopic"},
+    )
+    client.post("/bookmarks/new", data={"url": "https://example.com/su", "title": "Decoy Bookmark"})
+
+    body = client.get("/bookmarks?q=privacytopic").get_data(as_text=True)
+    assert "Something Unrelated" in body
+    assert "Decoy Bookmark" not in body
