@@ -115,6 +115,14 @@ def _attach_assignments(db: sqlite3.Connection, bookmarks: list[dict], ids: Iter
         by_id[r["bookmark_id"]]["tags"].append({"id": r["id"], "name": r["name"]})
 
 
+def find_bookmark_by_url(db: sqlite3.Connection, url: str) -> dict | None:
+    """Return a minimal dict {id, title, url} if a bookmark with this exact URL exists."""
+    row = db.execute(
+        "SELECT id, title, url FROM bookmarks WHERE url = ?", (url,)
+    ).fetchone()
+    return dict(row) if row else None
+
+
 def get_bookmark(db: sqlite3.Connection, bookmark_id: int) -> dict | None:
     row = db.execute("SELECT * FROM bookmarks WHERE id = ?", (bookmark_id,)).fetchone()
     if row is None:

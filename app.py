@@ -80,6 +80,11 @@ def register_routes(app: Flask) -> None:
         conn = db.get_db()
         if request.method == "POST":
             data, errors = _parse_form(request.form)
+            duplicate_of = None
+            if not errors:
+                duplicate_of = bm.find_bookmark_by_url(conn, data["url"])
+                if duplicate_of:
+                    errors["url"] = "This URL is already saved as a bookmark."
             if errors:
                 return render_template(
                     "bookmark_form.html",
@@ -90,6 +95,7 @@ def register_routes(app: Flask) -> None:
                     errors=errors,
                     collections=bm.list_collections(conn),
                     is_edit=False,
+                    duplicate_of=duplicate_of,
                 ), 400
 
             bm.create_bookmark(
@@ -123,6 +129,7 @@ def register_routes(app: Flask) -> None:
             errors={},
             collections=bm.list_collections(conn),
             is_edit=False,
+            duplicate_of=None,
         )
 
     @app.route("/bookmarks/<int:bookmark_id>/edit", methods=["GET", "POST"])
@@ -134,6 +141,12 @@ def register_routes(app: Flask) -> None:
 
         if request.method == "POST":
             data, errors = _parse_form(request.form)
+            duplicate_of = None
+            if not errors:
+                dup = bm.find_bookmark_by_url(conn, data["url"])
+                if dup and dup["id"] != bookmark_id:
+                    duplicate_of = dup
+                    errors["url"] = "This URL is already saved as a bookmark."
             if errors:
                 return render_template(
                     "bookmark_form.html",
@@ -145,6 +158,7 @@ def register_routes(app: Flask) -> None:
                     collections=bm.list_collections(conn),
                     is_edit=True,
                     bookmark=existing,
+                    duplicate_of=duplicate_of,
                 ), 400
 
             bm.update_bookmark(
@@ -178,6 +192,7 @@ def register_routes(app: Flask) -> None:
             errors={},
             collections=bm.list_collections(conn),
             is_edit=True,
+            duplicate_of=None,
             bookmark=existing,
         )
 

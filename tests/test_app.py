@@ -370,3 +370,43 @@ def test_inline_collection_supports_multiple_comma_separated(client):
     body = client.get("/bookmarks/new").get_data(as_text=True)
     assert "Work" in body
     assert "Home" in body
+
+
+def test_create_bookmark_rejects_exact_duplicate_url(client):
+    client.post("/bookmarks/new", data={"url": "https://example.com/dup", "title": "First Save"})
+    resp = client.post("/bookmarks/new", data={"url": "https://example.com/dup", "title": "Second Save"})
+    assert resp.status_code == 400
+    body = resp.get_data(as_text=True)
+    assert "already saved" in body
+
+
+def test_create_bookmark_duplicate_shows_link_to_existing(client):
+    client.post("/bookmarks/new", data={"url": "https://example.com/dup", "title": "The Original"})
+    resp = client.post("/bookmarks/new", data={"url": "https://example.com/dup"})
+    assert resp.status_code == 400
+    body = resp.get_data(as_text=True)
+    # Link to the existing bookmark's edit page must be present.
+    assert "/bookmarks/1/edit" in body
+    assert "The Original" in body
+
+
+def test_edit_bookmark_blocks_url_change_to_existing(client):
+    client.post("/bookmarks/new", data={"url": "https://example.com/one", "title": "One"})
+    client.post("/bookmarks/new", data={"url": "https://example.com/two", "title": "Two"})
+    resp = client.post(
+        "/bookmarks/2/edit",
+        data={"url": "https://example.com/one", "title": "Two"},
+    )
+    assert resp.status_code == 400
+    assert "already saved" in resp.get_data(as_text=True)
+
+
+def test_edit_bookmark_allows_resave_unchanged_url(client):
+    client.post("/bookmarks/new", data={"url": "https://example.com/keep", "title": "Keep"})
+    resp = client.post(
+        "/bookmarks/1/edit",
+        data={"url": "https://example.com/keep", "title": "Keep — edited title"},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    assert "Bookmark updated" in resp.get_data(as_text=True)

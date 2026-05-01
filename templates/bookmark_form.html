@@ -16,6 +16,11 @@
            value="{{ form.url }}"
            placeholder="https://example.com/page">
     {% if errors.url %}<p class="field-error">{{ errors.url }}</p>{% endif %}
+    {% if duplicate_of %}
+      <p class="field-hint">
+        <a href="{{ url_for('edit_bookmark', bookmark_id=duplicate_of.id) }}">View existing bookmark{% if duplicate_of.title %}: {{ duplicate_of.title }}{% endif %}</a>
+      </p>
+    {% endif %}
     {% if not form.url and not errors.url %}
       <p class="field-hint">Paste or type the URL you want to save.</p>
     {% endif %}
