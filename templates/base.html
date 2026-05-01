@@ -23,8 +23,7 @@
 
   <div class="layout">
     <nav class="sidebar" aria-label="Main">
-      <div class="sidebar-group">
-        <h2>Primary</h2>
+      <div class="sidebar-group sidebar-primary">
         <ul>
           <li><a class="{{ 'active' if page == 'all_bookmarks' else '' }}" href="{{ url_for('all_bookmarks') }}">All Bookmarks</a></li>
           <li><a class="{{ 'active' if page == 'favorites' else '' }}" href="{{ url_for('favorites') }}">Favorites</a></li>

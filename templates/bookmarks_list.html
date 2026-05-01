@@ -8,9 +8,8 @@
 
 <section class="toolbar" aria-label="List tools">
   <form class="toolbar-form" method="get" action="">
+    <input type="hidden" name="q" value="{{ filters.query }}">
     <div class="toolbar-primary">
-      <label class="visually-hidden" for="q">Search</label>
-      <input id="q" type="search" name="q" value="{{ filters.query }}" placeholder="Search this list">
       <p class="toolbar-count">{{ items|length }} bookmark{{ '' if items|length == 1 else 's' }}</p>
     </div>
 

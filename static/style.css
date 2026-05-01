@@ -133,6 +133,12 @@ h2 { font-size: 1rem; }
   color: var(--accent);
   font-weight: 500;
 }
+.sidebar-primary { margin-bottom: 1.5rem; }
+.sidebar-primary > ul { margin-top: .1rem; }
+.sidebar-primary a {
+  font-weight: 500;
+  font-size: .95rem;
+}
 .sidebar-group-muted .sidebar-soon {
   color: var(--text-faint);
   cursor: default;
@@ -162,39 +168,24 @@ h2 { font-size: 1rem; }
 .flash-success { background: var(--success-bg); color: var(--success-text); }
 .flash-error   { background: var(--danger-bg); color: var(--danger); }
 
-/* Toolbar — two tiers: a primary row (search + count) and a refine row (selects). */
+/* Toolbar — two tiers: a count row and a refine row (selects).
+   Search lives in the topbar; the toolbar refines the already-loaded view. */
 .toolbar { margin: .25rem 0 1rem; }
 .toolbar-form {
   display: flex;
   flex-direction: column;
-  gap: .55rem;
+  gap: .4rem;
 }
 
-/* Primary row: search dominates, count sits beside it. */
+/* Primary row: the result count, light and subordinate. */
 .toolbar-primary {
   display: flex;
   align-items: center;
-  gap: .85rem;
-}
-.toolbar-primary input[type="search"] {
-  flex: 1;
-  min-width: 0;
-  padding: .55rem .8rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-  font: inherit;
-  font-size: 1rem;
-}
-.toolbar-primary input[type="search"]:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
 }
 .toolbar-count {
-  color: var(--text-muted);
-  font-size: .88rem;
+  color: var(--text-faint);
+  font-size: .82rem;
   margin: 0;
-  flex-shrink: 0;
 }
 
 /* Refine row: smaller, lighter, visually subordinate. */
@@ -238,38 +229,41 @@ h2 { font-size: 1rem; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: .85rem 0;
+  padding: 1rem 0;
   border-top: 1px solid var(--border);
 }
 .bookmark-row:first-child { border-top: 0; }
 .bookmark-main { min-width: 0; flex: 1; }
 .bookmark-title {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
   color: var(--text);
   word-break: break-word;
+  line-height: 1.35;
 }
-.bookmark-title:hover { color: var(--accent); }
+.bookmark-title:hover { color: var(--accent); text-decoration: none; }
 .bookmark-meta {
   color: var(--text-muted);
-  font-size: .85rem;
-  margin: .15rem 0 0;
+  font-size: .82rem;
+  margin: .3rem 0 0;
   display: flex;
   flex-wrap: wrap;
-  gap: .35rem;
+  gap: .3rem;
   align-items: center;
 }
-.bookmark-domain { color: var(--text-faint); }
+.bookmark-domain { color: var(--text-faint); font-size: .8rem; }
 .meta-sep { color: var(--text-faint); }
 .bookmark-description {
-  margin: .25rem 0 0;
+  margin: .35rem 0 0;
   color: var(--text-muted);
-  font-size: .9rem;
+  font-size: .88rem;
+  line-height: 1.45;
 }
 .bookmark-actions {
   display: flex;
-  gap: .35rem;
-  align-items: center;
+  gap: .25rem;
+  align-items: flex-start;
+  padding-top: .1rem;
   flex-shrink: 0;
 }
 

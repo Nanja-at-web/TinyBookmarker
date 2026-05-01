@@ -47,7 +47,7 @@ def register_routes(app: Flask) -> None:
             "bookmarks_list.html",
             page="all_bookmarks",
             page_title="All Bookmarks",
-            page_subtitle="Your full bookmark library. Use this area for everyday bookmark work.",
+            page_subtitle="Your full bookmark library",
             items=items,
             collections=bm.list_collections(conn),
             tags=bm.list_tags(conn),
