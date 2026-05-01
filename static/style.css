@@ -390,6 +390,8 @@ h2 { font-size: 1rem; }
 .field { display: flex; flex-direction: column; gap: .25rem; }
 .field-inline { flex-direction: row; align-items: center; }
 .field label { font-weight: 500; font-size: .9rem; }
+/* Primary fields (URL, Title) get a slightly bolder label to anchor the hierarchy. */
+.field-primary label { font-weight: 600; }
 .field input[type="url"],
 .field input[type="text"],
 .field textarea {
@@ -429,7 +431,9 @@ h2 { font-size: 1rem; }
 }
 .field-group summary {
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 400;
+  font-size: .88rem;
+  color: var(--text-muted);
   padding: .15rem 0;
 }
 .field-group[open] { padding-bottom: 1rem; }
