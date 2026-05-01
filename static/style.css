@@ -17,6 +17,7 @@
   --radius: 6px;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   --maxw: 1100px;
+  color-scheme: light dark;
 }
 
 * { box-sizing: border-box; }
@@ -469,4 +470,37 @@ h2 { font-size: 1rem; }
   .layout { grid-template-columns: 1fr; }
   .sidebar { padding-right: 0; padding-bottom: 1rem; }
   .topbar-search { display: none; }
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────────────
+   Token overrides cover ~95% of the UI; only the few hardcoded badge/icon
+   hex values need explicit rules below. Light mode is fully preserved.    */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:           #111214;
+    --surface:      #1c1e21;
+    --border:       #2d3038;
+    --border-strong:#3a3e47;
+    --text:         #e6e8eb;
+    --text-muted:   #9498a2;
+    --text-faint:   #656972;
+    --accent:       #5b9ef5;
+    --accent-hover: #4a8ee5;
+    --accent-soft:  #1e2d47;
+    --danger:       #e05c52;
+    --danger-bg:    #381618;
+    --warn:         #d4922d;
+    --success-bg:   #14281e;
+    --success-text: #4cad72;
+    --shadow:       none;
+  }
+
+  /* Badge backgrounds are hardcoded in light mode — override for dark. */
+  .badge             { background: #252830; }
+  .badge-collection  { background: #1c2b42; color: #6b9fe8; }
+  .badge-tag         { background: #22193a; color: #9b80d4; }
+
+  /* Favourite star — brighter gold for legibility on dark backgrounds. */
+  .icon-btn-on       { color: #e8b83a; }
+  .icon-btn-on:hover { color: #d4a428; }
 }
