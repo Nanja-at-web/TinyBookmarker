@@ -195,11 +195,13 @@ def test_toolbar_has_two_tiers_primary_and_refine(client):
     # Primary tier wraps search + count; refine tier wraps the selects.
     assert 'class="toolbar-primary"' in body
     assert 'class="toolbar-refine"' in body
-    # Search and count belong to the primary tier; selects must not appear before refine.
+    # The toolbar tiers appear in order: primary, then refine.
     primary_index = body.index('class="toolbar-primary"')
     refine_index = body.index('class="toolbar-refine"')
-    first_select = body.index("<select")
-    assert primary_index < refine_index < first_select
+    assert primary_index < refine_index
+    # The refine tier must contain at least one select (name="sort" is always present).
+    refine_block = body[refine_index:]
+    assert 'name="sort"' in refine_block
 
 
 def test_toolbar_dropdowns_apply_immediately_on_change(client):
@@ -436,3 +438,22 @@ def test_search_finds_bookmark_by_tag_name(client):
     body = client.get("/bookmarks?q=privacytopic").get_data(as_text=True)
     assert "Something Unrelated" in body
     assert "Decoy Bookmark" not in body
+
+
+def test_theme_toggle_present_in_topbar(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # The select element and all three options must be present.
+    assert 'id="theme-toggle"' in body
+    assert 'value="system"' in body
+    assert 'value="light"' in body
+    assert 'value="dark"' in body
+
+
+def test_theme_anti_flash_script_present(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # The anti-flash script must run before the stylesheet to prevent FOUC.
+    assert "tinybookmarker-theme" in body
+    assert "data-theme" in body
+    stylesheet_pos = body.find('rel="stylesheet"')
+    antiflash_pos = body.find("tinybookmarker-theme")
+    assert antiflash_pos < stylesheet_pos, "anti-flash script must appear before the stylesheet link"

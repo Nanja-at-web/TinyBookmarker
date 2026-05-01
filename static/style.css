@@ -472,11 +472,36 @@ h2 { font-size: 1rem; }
   .topbar-search { display: none; }
 }
 
+/* ── Theme toggle ──────────────────────────────────────────────────────────
+   Quiet select in the topbar; styled to match secondary refine controls.  */
+.theme-select {
+  padding: .3rem .45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+.theme-select:hover,
+.theme-select:focus {
+  color: var(--text);
+  border-color: var(--border-strong);
+  outline: none;
+}
+
 /* ── Dark mode ─────────────────────────────────────────────────────────────
-   Token overrides cover ~95% of the UI; only the few hardcoded badge/icon
-   hex values need explicit rules below. Light mode is fully preserved.    */
+   System mode: follows prefers-color-scheme, skipped when light is forced.
+   Forced dark: html[data-theme="dark"] applies regardless of system pref.
+   Token overrides cover ~95% of the UI; hardcoded badge/icon hex values
+   are explicitly overridden below each block.                             */
+
+/* Explicit light override — restore browser chrome (scrollbars, inputs). */
+html[data-theme="light"] { color-scheme: light; }
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not([data-theme="light"]) {
     --bg:           #111214;
     --surface:      #1c1e21;
     --border:       #2d3038;
@@ -493,14 +518,39 @@ h2 { font-size: 1rem; }
     --success-bg:   #14281e;
     --success-text: #4cad72;
     --shadow:       none;
+    color-scheme:   dark;
   }
 
-  /* Badge backgrounds are hardcoded in light mode — override for dark. */
-  .badge             { background: #252830; }
-  .badge-collection  { background: #1c2b42; color: #6b9fe8; }
-  .badge-tag         { background: #22193a; color: #9b80d4; }
-
-  /* Favourite star — brighter gold for legibility on dark backgrounds. */
-  .icon-btn-on       { color: #e8b83a; }
-  .icon-btn-on:hover { color: #d4a428; }
+  html:not([data-theme="light"]) .badge            { background: #252830; }
+  html:not([data-theme="light"]) .badge-collection { background: #1c2b42; color: #6b9fe8; }
+  html:not([data-theme="light"]) .badge-tag        { background: #22193a; color: #9b80d4; }
+  html:not([data-theme="light"]) .icon-btn-on       { color: #e8b83a; }
+  html:not([data-theme="light"]) .icon-btn-on:hover { color: #d4a428; }
 }
+
+/* Forced dark — identical tokens, applied outside the media query. */
+html[data-theme="dark"] {
+  --bg:           #111214;
+  --surface:      #1c1e21;
+  --border:       #2d3038;
+  --border-strong:#3a3e47;
+  --text:         #e6e8eb;
+  --text-muted:   #9498a2;
+  --text-faint:   #656972;
+  --accent:       #5b9ef5;
+  --accent-hover: #4a8ee5;
+  --accent-soft:  #1e2d47;
+  --danger:       #e05c52;
+  --danger-bg:    #381618;
+  --warn:         #d4922d;
+  --success-bg:   #14281e;
+  --success-text: #4cad72;
+  --shadow:       none;
+  color-scheme:   dark;
+}
+
+html[data-theme="dark"] .badge            { background: #252830; }
+html[data-theme="dark"] .badge-collection { background: #1c2b42; color: #6b9fe8; }
+html[data-theme="dark"] .badge-tag        { background: #22193a; color: #9b80d4; }
+html[data-theme="dark"] .icon-btn-on       { color: #e8b83a; }
+html[data-theme="dark"] .icon-btn-on:hover { color: #d4a428; }

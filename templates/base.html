@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>{% block title %}{{ page_title }}{% endblock %} · TinyBookmarker</title>
+  <script>
+    /* Apply saved theme before CSS renders to prevent flash. */
+    (function () {
+      var t = localStorage.getItem('tinybookmarker-theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    }());
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="page-{{ page|default('') }}">
@@ -19,6 +28,11 @@
         aria-label="Search bookmarks">
     </form>
     <a class="topbar-primary" href="{{ url_for('new_bookmark') }}">+ New Bookmark</a>
+    <select id="theme-toggle" class="theme-select" aria-label="Color theme">
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
     <span class="topbar-profile" aria-hidden="true">Profile</span>
   </header>
 
@@ -72,5 +86,23 @@
       {% block main %}{% endblock %}
     </main>
   </div>
+  <script>
+    (function () {
+      var sel = document.getElementById('theme-toggle');
+      if (!sel) return;
+      var stored = localStorage.getItem('tinybookmarker-theme') || 'system';
+      sel.value = stored;
+      sel.addEventListener('change', function () {
+        var val = this.value;
+        if (val === 'system') {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.removeItem('tinybookmarker-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', val);
+          localStorage.setItem('tinybookmarker-theme', val);
+        }
+      });
+    }());
+  </script>
 </body>
 </html>
