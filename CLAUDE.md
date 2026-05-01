@@ -137,3 +137,14 @@ If the answer is mostly:
 - “it adds complexity without making bookmark work clearer”
 
 then the direction is probably wrong.
+
+## Efficiency defaults
+
+- Handle one task at a time.
+- Read only the documentation and code files needed for the task.
+- Avoid repo-wide analysis unless explicitly requested.
+- Prefer the smallest coherent change that solves the problem.
+- Avoid unrelated refactors, side quests, and optional improvements.
+- Run only the tests relevant to the touched area.
+- Keep the final write-up concise and structured.
+- Never push unless the user explicitly asks for it.

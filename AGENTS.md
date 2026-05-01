@@ -74,3 +74,19 @@ Before finishing a task, ask:
 - Or does it mainly make it more like a reader, archive system, technical dashboard, or unfocused multi-tool?
 
 If the second is true, the direction is likely wrong.
+
+## Default working mode
+
+- Work on one clearly scoped task per run.
+- Read only the files needed for that task.
+- Do not expand scope unless explicitly asked.
+- Prefer the smallest coherent solution over broader refactors.
+- Run only the relevant tests for the current task.
+- Keep reports short and structured:
+  - problem
+  - solution
+  - changed files
+  - tests
+  - commit yes/no
+  - push yes/no
+- Do not push unless explicitly authorized.
