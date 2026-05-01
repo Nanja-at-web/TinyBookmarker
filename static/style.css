@@ -306,8 +306,10 @@ h2 { font-size: 1rem; }
   background: #eef0f3;
   color: var(--text-muted);
 }
-.badge-collection { background: #eaf0fd; color: var(--accent); }
-.badge-tag        { background: #f1eef9; color: #6041b9; }
+/* Collection badge: blue tint but not the full accent — badge is metadata, not a link. */
+.badge-collection { background: #eef3fd; color: #4273c8; }
+/* Tag badge: purple tint, slightly softer than before. */
+.badge-tag        { background: #f2eff9; color: #6b4eb5; }
 
 .icon-btn {
   background: transparent;
@@ -323,6 +325,17 @@ h2 { font-size: 1rem; }
 .icon-btn:hover { background: var(--accent-soft); color: var(--accent); }
 .icon-btn-on { color: #d49a00; }
 .icon-btn-on:hover { color: #b07f00; }
+
+/* Edit link inside a bookmark row is a secondary action — quiet until hovered. */
+.bookmark-actions .btn-link {
+  color: var(--text-faint);
+  font-size: .85rem;
+  padding: .45rem .2rem;
+}
+.bookmark-actions .btn-link:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
 
 /* Buttons */
 .btn {
