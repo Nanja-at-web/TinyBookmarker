@@ -97,6 +97,7 @@ def register_routes(app: Flask) -> None:
                 description=data["description"],
                 is_favorite=data["is_favorite"],
                 collection_ids=data["collection_ids"],
+                new_collection_names=data["new_collection_names"],
                 tag_names=data["tag_names"],
             )
             flash("Bookmark saved.", "success")
@@ -114,6 +115,7 @@ def register_routes(app: Flask) -> None:
                 "description": "",
                 "is_favorite": False,
                 "collection_ids": [],
+                "new_collection_names": [],
                 "tag_names": [],
             },
             errors={},
@@ -151,6 +153,7 @@ def register_routes(app: Flask) -> None:
                 description=data["description"],
                 is_favorite=data["is_favorite"],
                 collection_ids=data["collection_ids"],
+                new_collection_names=data["new_collection_names"],
                 tag_names=data["tag_names"],
             )
             flash("Bookmark updated.", "success")
@@ -167,6 +170,7 @@ def register_routes(app: Flask) -> None:
                 "description": existing["description"],
                 "is_favorite": bool(existing["is_favorite"]),
                 "collection_ids": [c["id"] for c in existing["collections"]],
+                "new_collection_names": [],
                 "tag_names": [t["name"] for t in existing["tags"]],
             },
             errors={},
@@ -227,6 +231,7 @@ def _parse_form(form) -> tuple[dict, dict]:
         except ValueError:
             continue
 
+    new_collection_names = bm.split_tag_input(form.get("new_collections", ""))
     tag_names = bm.split_tag_input(form.get("tags", ""))
 
     errors: dict[str, str] = {}
@@ -242,6 +247,7 @@ def _parse_form(form) -> tuple[dict, dict]:
             "description": description,
             "is_favorite": is_favorite,
             "collection_ids": collection_ids,
+            "new_collection_names": new_collection_names,
             "tag_names": tag_names,
         },
         errors,

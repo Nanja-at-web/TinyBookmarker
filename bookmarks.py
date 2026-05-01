@@ -132,6 +132,7 @@ def create_bookmark(
     description: str,
     is_favorite: bool,
     collection_ids: list[int],
+    new_collection_names: list[str] | None = None,
     tag_names: list[str],
 ) -> int:
     cur = db.execute(
@@ -139,7 +140,7 @@ def create_bookmark(
         (url, title, description, 1 if is_favorite else 0),
     )
     bookmark_id = cur.lastrowid
-    _set_collections(db, bookmark_id, collection_ids)
+    _set_collections(db, bookmark_id, collection_ids, new_collection_names or [])
     _set_tags(db, bookmark_id, tag_names)
     db.commit()
     return bookmark_id
@@ -154,6 +155,7 @@ def update_bookmark(
     description: str,
     is_favorite: bool,
     collection_ids: list[int],
+    new_collection_names: list[str] | None = None,
     tag_names: list[str],
 ) -> None:
     db.execute(
@@ -164,7 +166,7 @@ def update_bookmark(
         """,
         (url, title, description, 1 if is_favorite else 0, bookmark_id),
     )
-    _set_collections(db, bookmark_id, collection_ids)
+    _set_collections(db, bookmark_id, collection_ids, new_collection_names or [])
     _set_tags(db, bookmark_id, tag_names)
     db.commit()
 
@@ -187,13 +189,21 @@ def toggle_favorite(db: sqlite3.Connection, bookmark_id: int) -> bool | None:
     return bool(new_state)
 
 
-def _set_collections(db: sqlite3.Connection, bookmark_id: int, collection_ids: list[int]) -> None:
+def _set_collections(
+    db: sqlite3.Connection,
+    bookmark_id: int,
+    collection_ids: list[int],
+    new_collection_names: list[str] | None = None,
+) -> None:
     db.execute("DELETE FROM bookmark_collections WHERE bookmark_id = ?", (bookmark_id,))
-    if not collection_ids:
+    ids: list[int] = list(collection_ids)
+    for name in new_collection_names or []:
+        ids.append(get_or_create_collection(db, name))
+    if not ids:
         return
     db.executemany(
         "INSERT OR IGNORE INTO bookmark_collections (bookmark_id, collection_id) VALUES (?, ?)",
-        [(bookmark_id, cid) for cid in collection_ids],
+        [(bookmark_id, cid) for cid in ids],
     )
 
 
@@ -232,5 +242,4 @@ def get_or_create_collection(db: sqlite3.Connection, name: str) -> int:
     if row is not None:
         return row["id"]
     cur = db.execute("INSERT INTO collections (name) VALUES (?)", (name,))
-    db.commit()
     return cur.lastrowid

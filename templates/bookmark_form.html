@@ -35,11 +35,11 @@
     </label>
   </div>
 
-  <details class="field-group" {% if form.collection_ids or form.tag_names or form.description or is_edit %}open{% endif %}>
+  <details class="field-group" {% if form.collection_ids or form.new_collection_names or form.tag_names or form.description or is_edit %}open{% endif %}>
     <summary>Organize (collections, tags, notes)</summary>
 
     <div class="field">
-      <label>Collections</label>
+      <label for="new_collections">Collections</label>
       {% if collections %}
         <div class="checkbox-grid">
           {% for c in collections %}
@@ -50,9 +50,11 @@
             </label>
           {% endfor %}
         </div>
-      {% else %}
-        <p class="field-hint">No collections yet. You can add them later from the Collections area.</p>
       {% endif %}
+      <input id="new_collections" name="new_collections" type="text"
+             value="{{ form.new_collection_names|join(', ') }}"
+             placeholder="{% if collections %}Or create a new collection{% else %}Type a name to create your first collection{% endif %}">
+      <p class="field-hint">Collections group bookmarks by structure. New collections are created on save.</p>
     </div>
 
     <div class="field">

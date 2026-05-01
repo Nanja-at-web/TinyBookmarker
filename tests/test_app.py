@@ -173,3 +173,77 @@ def test_404_on_unknown_bookmark(client):
     assert client.get("/bookmarks/999/edit").status_code == 404
     assert client.post("/bookmarks/999/delete").status_code == 404
     assert client.post("/bookmarks/999/toggle-favorite").status_code == 404
+
+
+def test_new_form_offers_first_collection_creation_when_none_exist(client):
+    body = client.get("/bookmarks/new").get_data(as_text=True)
+    assert 'name="new_collections"' in body
+    assert "Type a name to create your first collection" in body
+    # The dead "Collections area" hint must be gone.
+    assert "Collections area" not in body
+
+
+def test_create_bookmark_creates_first_collection_inline(client):
+    resp = client.post(
+        "/bookmarks/new",
+        data={
+            "url": "https://example.com/work",
+            "title": "Work item",
+            "new_collections": "Work",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # Collection appears as a badge on the saved bookmark row.
+    assert "Work" in body
+
+    # Now the new-form should switch to "Or create a new collection".
+    new_form = client.get("/bookmarks/new").get_data(as_text=True)
+    assert "Or create a new collection" in new_form
+    # Existing collection appears as a checkbox.
+    assert 'name="collection_ids"' in new_form
+
+
+def test_inline_collection_creation_reuses_existing_exact_name(client):
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/a", "new_collections": "Reading"},
+    )
+    # Same exact name on the second save must reuse the existing collection.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/b", "new_collections": "Reading"},
+    )
+    body = client.get("/bookmarks/new").get_data(as_text=True)
+    # Only one "Reading" collection should be rendered as a checkbox option.
+    assert body.count('name="collection_ids"') == 1
+
+
+def test_edit_can_create_collection_inline(client):
+    client.post("/bookmarks/new", data={"url": "https://example.com/x", "title": "X"})
+    resp = client.post(
+        "/bookmarks/1/edit",
+        data={
+            "url": "https://example.com/x",
+            "title": "X",
+            "new_collections": "Research",
+        },
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    assert "Research" in resp.get_data(as_text=True)
+
+
+def test_inline_collection_supports_multiple_comma_separated(client):
+    client.post(
+        "/bookmarks/new",
+        data={
+            "url": "https://example.com/m",
+            "title": "Multi",
+            "new_collections": "Work, Home",
+        },
+    )
+    body = client.get("/bookmarks/new").get_data(as_text=True)
+    assert "Work" in body
+    assert "Home" in body
