@@ -159,14 +159,51 @@ def test_search_filters_list(client):
     assert "Banana" not in body
 
 
-def test_inbox_filter_shows_only_unsorted(client):
-    client.post("/bookmarks/new", data={"url": "https://x.example.com/", "title": "Sorted", "tags": "t1"})
-    client.post("/bookmarks/new", data={"url": "https://y.example.com/", "title": "Unsorted"})
+def test_unsorted_filter_shows_only_unsorted(client):
+    client.post("/bookmarks/new", data={"url": "https://x.example.com/", "title": "Has Tag", "tags": "t1"})
+    client.post("/bookmarks/new", data={"url": "https://y.example.com/", "title": "Just Saved"})
 
-    resp = client.get("/bookmarks?filter=inbox")
+    resp = client.get("/bookmarks?filter=unsorted")
     body = resp.get_data(as_text=True)
-    assert "Unsorted" in body
-    assert "Sorted" not in body
+    assert "Just Saved" in body
+    assert "Has Tag" not in body
+
+
+def test_unsorted_filter_dropdown_uses_unsorted_value(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # The dropdown option must use the user-facing param value 'unsorted'.
+    assert 'value="unsorted"' in body
+    # The dropdown label must explain the criterion right there.
+    assert "no collection or tag" in body
+    # The legacy 'inbox' value must NOT leak into the UI.
+    assert 'value="inbox"' not in body
+
+
+def test_unsorted_filter_active_shows_contextual_hint(client):
+    client.post("/bookmarks/new", data={"url": "https://example.com/u", "title": "Pending"})
+    body = client.get("/bookmarks?filter=unsorted").get_data(as_text=True)
+    # Hint visible above the list, explaining how to leave the state.
+    assert "no collection or tag yet" in body
+    assert "add a collection or tag" in body
+    # The hint must NOT appear without the filter.
+    plain = client.get("/bookmarks").get_data(as_text=True)
+    assert "no collection or tag yet" not in plain
+
+
+def test_unsorted_filter_zero_state_is_friendly_success(client):
+    # Every bookmark is organized via a tag.
+    client.post(
+        "/bookmarks/new",
+        data={"url": "https://example.com/o", "title": "Organized", "tags": "topic"},
+    )
+    body = client.get("/bookmarks?filter=unsorted").get_data(as_text=True)
+    # Friendly success copy, not the generic no-results copy.
+    assert "Nothing is unsorted" in body
+    assert "Show all bookmarks" in body
+    # The generic "no matches" copy must NOT appear in this case.
+    assert "No bookmarks match this view" not in body
+    # And the first-run empty state must NOT appear either.
+    assert "Your bookmark library is empty" not in body
 
 
 def test_404_on_unknown_bookmark(client):

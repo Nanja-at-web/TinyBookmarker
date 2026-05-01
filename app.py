@@ -207,7 +207,7 @@ def _is_filtered(params: dict) -> bool:
     """
     return bool(
         params.get("query")
-        or params.get("inbox_only")
+        or params.get("unsorted_only")
         or params.get("collection_id")
         or params.get("tag_id")
     )
@@ -226,7 +226,7 @@ def _parse_list_params(args) -> dict:
 
     return {
         "favorites_only": False,
-        "inbox_only": args.get("filter") == "inbox",
+        "unsorted_only": args.get("filter") == "unsorted",
         "collection_id": maybe_int(args.get("collection")),
         "tag_id": maybe_int(args.get("tag")),
         "query": (args.get("q") or "").strip(),

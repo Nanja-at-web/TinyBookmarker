@@ -15,7 +15,7 @@
     <label class="visually-hidden" for="filter">Filter</label>
     <select id="filter" name="filter">
       <option value="">All bookmarks</option>
-      <option value="inbox" {% if filters.inbox_only %}selected{% endif %}>Unsorted only</option>
+      <option value="unsorted" {% if filters.unsorted_only %}selected{% endif %}>Unsorted (no collection or tag)</option>
     </select>
     {% endif %}
 
@@ -53,6 +53,11 @@
 </section>
 
 {% if items %}
+  {% if filters.unsorted_only %}
+    <p class="filter-context-hint">
+      These bookmarks have no collection or tag yet. Open one and add a collection or tag to organize it.
+    </p>
+  {% endif %}
   <ul class="bookmark-list">
     {% for b in items %}
       <li class="bookmark-row {% if b.is_favorite %}is-favorite{% endif %}">
@@ -96,15 +101,21 @@
   </ul>
 {% elif is_filtered %}
   <section class="empty-state empty-state-no-results" aria-live="polite">
-    <h2>No bookmarks match this view</h2>
-    <p>
-      {% if empty_kind == 'favorites' %}
-        Your search or filter returned no favorites. Try a different search term, or clear it to see all your favorites.
-      {% else %}
-        Your search or filter returned no bookmarks. Try a different search term, or clear it to see your full library.
-      {% endif %}
-    </p>
-    <a class="btn btn-secondary" href="{{ url_for(request.endpoint) }}">Clear search and filters</a>
+    {% if filters.unsorted_only and not filters.query and not filters.collection_id and not filters.tag_id %}
+      <h2>Nothing is unsorted</h2>
+      <p>Every bookmark has at least one collection or tag. You can switch back to your full library.</p>
+      <a class="btn btn-secondary" href="{{ url_for(request.endpoint) }}">Show all bookmarks</a>
+    {% else %}
+      <h2>No bookmarks match this view</h2>
+      <p>
+        {% if empty_kind == 'favorites' %}
+          Your search or filter returned no favorites. Try a different search term, or clear it to see all your favorites.
+        {% else %}
+          Your search or filter returned no bookmarks. Try a different search term, or clear it to see your full library.
+        {% endif %}
+      </p>
+      <a class="btn btn-secondary" href="{{ url_for(request.endpoint) }}">Clear search and filters</a>
+    {% endif %}
   </section>
 {% else %}
   <section class="empty-state">

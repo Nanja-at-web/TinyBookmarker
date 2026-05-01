@@ -26,7 +26,7 @@ def list_bookmarks(
     db: sqlite3.Connection,
     *,
     favorites_only: bool = False,
-    inbox_only: bool = False,
+    unsorted_only: bool = False,
     collection_id: int | None = None,
     tag_id: int | None = None,
     query: str = "",
@@ -46,7 +46,8 @@ def list_bookmarks(
         params.append(tag_id)
     if favorites_only:
         where.append("b.is_favorite = 1")
-    if inbox_only:
+    if unsorted_only:
+        # "Unsorted" = saved but not yet structurally organized: no collection AND no tag.
         where.append(
             "NOT EXISTS (SELECT 1 FROM bookmark_collections WHERE bookmark_id = b.id) "
             "AND NOT EXISTS (SELECT 1 FROM bookmark_tags WHERE bookmark_id = b.id)"
