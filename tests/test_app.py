@@ -190,6 +190,29 @@ def test_unsorted_filter_active_shows_contextual_hint(client):
     assert "no collection or tag yet" not in plain
 
 
+def test_toolbar_has_two_tiers_primary_and_refine(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # Primary tier wraps search + count; refine tier wraps the selects.
+    assert 'class="toolbar-primary"' in body
+    assert 'class="toolbar-refine"' in body
+    # Search and count belong to the primary tier; selects must not appear before refine.
+    primary_index = body.index('class="toolbar-primary"')
+    refine_index = body.index('class="toolbar-refine"')
+    first_select = body.index("<select")
+    assert primary_index < refine_index < first_select
+
+
+def test_toolbar_dropdowns_apply_immediately_on_change(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # Every refine select auto-submits — no explicit Apply needed in the JS path.
+    assert body.count('onchange="this.form.submit()"') >= 2  # filter + sort always present
+    # The Apply button only exists as a <noscript> fallback.
+    assert "<noscript>" in body
+    # And it must NOT appear outside the noscript tag.
+    pre_noscript = body.split("<noscript>")[0]
+    assert ">Apply<" not in pre_noscript
+
+
 def test_unsorted_filter_zero_state_is_friendly_success(client):
     # Every bookmark is organized via a tag.
     client.post(

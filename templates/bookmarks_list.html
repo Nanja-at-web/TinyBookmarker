@@ -8,48 +8,51 @@
 
 <section class="toolbar" aria-label="List tools">
   <form class="toolbar-form" method="get" action="">
-    <label class="visually-hidden" for="q">Search</label>
-    <input id="q" type="search" name="q" value="{{ filters.query }}" placeholder="Search this list">
+    <div class="toolbar-primary">
+      <label class="visually-hidden" for="q">Search</label>
+      <input id="q" type="search" name="q" value="{{ filters.query }}" placeholder="Search this list">
+      <p class="toolbar-count">{{ items|length }} bookmark{{ '' if items|length == 1 else 's' }}</p>
+    </div>
 
-    {% if page == 'all_bookmarks' %}
-    <label class="visually-hidden" for="filter">Filter</label>
-    <select id="filter" name="filter">
-      <option value="">All bookmarks</option>
-      <option value="unsorted" {% if filters.unsorted_only %}selected{% endif %}>Unsorted (no collection or tag)</option>
-    </select>
-    {% endif %}
+    <div class="toolbar-refine" aria-label="Refine list">
+      {% if page == 'all_bookmarks' %}
+      <label class="visually-hidden" for="filter">Filter</label>
+      <select id="filter" name="filter" onchange="this.form.submit()">
+        <option value="">All bookmarks</option>
+        <option value="unsorted" {% if filters.unsorted_only %}selected{% endif %}>Unsorted (no collection or tag)</option>
+      </select>
+      {% endif %}
 
-    {% if collections %}
-    <label class="visually-hidden" for="collection">Collection</label>
-    <select id="collection" name="collection">
-      <option value="">Any collection</option>
-      {% for c in collections %}
-        <option value="{{ c.id }}" {% if filters.collection_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-      {% endfor %}
-    </select>
-    {% endif %}
+      {% if collections %}
+      <label class="visually-hidden" for="collection">Collection</label>
+      <select id="collection" name="collection" onchange="this.form.submit()">
+        <option value="">Any collection</option>
+        {% for c in collections %}
+          <option value="{{ c.id }}" {% if filters.collection_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
 
-    {% if tags %}
-    <label class="visually-hidden" for="tag">Tag</label>
-    <select id="tag" name="tag">
-      <option value="">Any tag</option>
-      {% for t in tags %}
-        <option value="{{ t.id }}" {% if filters.tag_id == t.id %}selected{% endif %}>{{ t.name }}</option>
-      {% endfor %}
-    </select>
-    {% endif %}
+      {% if tags %}
+      <label class="visually-hidden" for="tag">Tag</label>
+      <select id="tag" name="tag" onchange="this.form.submit()">
+        <option value="">Any tag</option>
+        {% for t in tags %}
+          <option value="{{ t.id }}" {% if filters.tag_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
 
-    <label class="visually-hidden" for="sort">Sort</label>
-    <select id="sort" name="sort">
-      <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest first</option>
-      <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
-      <option value="title"  {% if filters.sort == 'title'  %}selected{% endif %}>Title (A–Z)</option>
-    </select>
+      <label class="visually-hidden" for="sort">Sort</label>
+      <select id="sort" name="sort" onchange="this.form.submit()">
+        <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest first</option>
+        <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+        <option value="title"  {% if filters.sort == 'title'  %}selected{% endif %}>Title (A–Z)</option>
+      </select>
 
-    <button type="submit" class="btn btn-secondary">Apply</button>
+      <noscript><button type="submit" class="btn btn-secondary">Apply</button></noscript>
+    </div>
   </form>
-
-  <p class="toolbar-count">{{ items|length }} bookmark{{ '' if items|length == 1 else 's' }}</p>
 </section>
 
 {% if items %}
