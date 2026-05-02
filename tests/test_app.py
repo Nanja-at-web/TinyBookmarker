@@ -769,6 +769,15 @@ def test_pagination_current_page_is_marked(client):
     assert 'pagination-page-current" aria-current="page">2<' in body
 
 
+def test_pagination_single_page_shows_status(client):
+    # With only a few bookmarks (less than per_page) no nav is shown but the
+    # "Page 1 of 1" info span must be visible.
+    client.post("/bookmarks/new", data={"url": "https://single.example.com/1", "title": "Single"})
+    body = client.get("/bookmarks?per_page=15").get_data(as_text=True)
+    assert "pagination-nav" not in body
+    assert "Page 1 of 1" in body
+
+
 def test_pagination_page_links_carry_sort(client):
     for i in range(20):
         client.post("/bookmarks/new", data={"url": f"https://k.example.com/{i}", "title": f"K{i}"})
