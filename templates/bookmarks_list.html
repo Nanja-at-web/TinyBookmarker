@@ -91,6 +91,7 @@
         </div>
         <div class="bookmark-actions">
           <form method="post" action="{{ url_for('toggle_favorite', bookmark_id=b.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="next" value="{{ request.full_path }}">
             <button type="submit"
                     class="icon-btn {% if b.is_favorite %}icon-btn-on{% endif %}"

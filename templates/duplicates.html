@@ -46,6 +46,7 @@
             <form method="post"
                   action="{{ url_for('delete_duplicate', bookmark_id=b.id) }}"
                   onsubmit="return confirm('Delete this bookmark? This cannot be undone.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-danger btn-sm">Delete</button>
             </form>
           </div>

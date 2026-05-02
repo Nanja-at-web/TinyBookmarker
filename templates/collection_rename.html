@@ -9,6 +9,7 @@
 <form class="bookmark-form"
       method="post"
       action="{{ url_for('edit_collection', collection_id=collection.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="field field-primary">
     <label for="name">Collection name <span class="required">*</span></label>

@@ -1,4 +1,6 @@
+import hmac
 import os
+import secrets
 
 from flask import (
     Flask,
@@ -7,6 +9,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 
@@ -29,11 +32,21 @@ def create_app(config: dict | None = None) -> Flask:
     db.init_db(app)
     db.init_app(app)
 
+    app.jinja_env.globals["csrf_token"] = _get_csrf_token
+
     register_routes(app)
     return app
 
 
 def register_routes(app: Flask) -> None:
+    @app.before_request
+    def _check_csrf():
+        if request.method == "POST":
+            token = request.form.get("csrf_token", "")
+            expected = session.get("csrf_token", "")
+            if not expected or not hmac.compare_digest(token, expected):
+                abort(403)
+
     @app.get("/")
     def index():
         return redirect(url_for("all_bookmarks"))
@@ -446,6 +459,13 @@ def _parse_form(form) -> tuple[dict, dict]:
         },
         errors,
     )
+
+
+def _get_csrf_token() -> str:
+    """Return the per-session CSRF token, creating it on first call."""
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
+    return session["csrf_token"]
 
 
 if __name__ == "__main__":

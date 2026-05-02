@@ -467,6 +467,42 @@ def test_theme_anti_flash_script_present(client):
     assert antiflash_pos < stylesheet_pos, "anti-flash script must appear before the stylesheet link"
 
 
+# ── CSRF protection ───────────────────────────────────────────────────────────
+
+def test_csrf_post_without_token_is_rejected(app):
+    # Raw client — no auto-injected token — simulates a cross-site request.
+    raw = app.test_client()
+    resp = raw.post("/bookmarks/new", data={"url": "https://example.com"})
+    assert resp.status_code == 403
+
+
+def test_csrf_post_with_wrong_token_is_rejected(app):
+    raw = app.test_client()
+    with raw.session_transaction() as sess:
+        sess["csrf_token"] = "correct-token"
+    resp = raw.post("/bookmarks/new", data={"url": "https://example.com", "csrf_token": "wrong-token"})
+    assert resp.status_code == 403
+
+
+def test_csrf_post_with_valid_token_proceeds(app):
+    raw = app.test_client()
+    with raw.session_transaction() as sess:
+        sess["csrf_token"] = "valid-token"
+    # Empty URL triggers a 400 (form validation), not 403 — CSRF check passed.
+    resp = raw.post("/bookmarks/new", data={"url": "", "csrf_token": "valid-token"})
+    assert resp.status_code == 400
+
+
+def test_csrf_token_hidden_field_present_in_forms(client):
+    # Pages that always render a POST form must embed the hidden CSRF field.
+    # /bookmarks/new always has the save form; /collections always has the
+    # create-collection form.  /tags only shows delete forms when tags exist,
+    # so it is excluded from this always-available check.
+    for path in ["/bookmarks/new", "/collections"]:
+        body = client.get(path).get_data(as_text=True)
+        assert 'name="csrf_token"' in body, f"csrf_token field missing on {path}"
+
+
 # ── Collections screen ────────────────────────────────────────────────────────
 
 def test_collections_empty_state(client):

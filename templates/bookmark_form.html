@@ -9,6 +9,7 @@
 <form class="bookmark-form"
       method="post"
       action="{{ url_for('edit_bookmark', bookmark_id=bookmark.id) if is_edit else url_for('new_bookmark') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="field field-primary">
     <label for="url">URL <span class="required">*</span></label>
@@ -90,6 +91,7 @@
         method="post"
         action="{{ url_for('delete_bookmark', bookmark_id=bookmark.id) }}"
         onsubmit="return confirm('Delete this bookmark? This cannot be undone.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn btn-danger">Delete bookmark</button>
   </form>
 {% endif %}
