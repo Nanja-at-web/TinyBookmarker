@@ -219,7 +219,7 @@ def register_routes(app: Flask) -> None:
     def collections():
         conn = db.get_db()
         sort = request.args.get("sort", "name")
-        if sort not in {"name", "count"}:
+        if sort not in {"name", "name_desc", "count", "count_asc"}:
             sort = "name"
         return render_template(
             "collections.html",
@@ -292,7 +292,7 @@ def register_routes(app: Flask) -> None:
     def tags():
         conn = db.get_db()
         sort = request.args.get("sort", "name")
-        if sort not in {"name", "count"}:
+        if sort not in {"name", "name_desc", "count", "count_asc"}:
             sort = "name"
         return render_template(
             "tags.html",
@@ -346,7 +346,7 @@ def register_routes(app: Flask) -> None:
     def duplicates():
         conn = db.get_db()
         sort = request.args.get("sort", "url")
-        if sort not in {"url", "size"}:
+        if sort not in {"url", "url_desc", "size", "size_asc"}:
             sort = "url"
         groups = bm.find_duplicate_groups(conn, sort=sort)
         return render_template(
@@ -399,7 +399,7 @@ def _parse_list_params(args) -> dict:
             return None
 
     sort = args.get("sort", "newest")
-    if sort not in {"newest", "oldest", "title"}:
+    if sort not in {"newest", "oldest", "title", "title_desc"}:
         sort = "newest"
 
     return {

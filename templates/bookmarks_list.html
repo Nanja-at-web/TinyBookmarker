@@ -46,9 +46,10 @@
 
       <label class="visually-hidden" for="sort">Sort</label>
       <select id="sort" name="sort" class="select-sort" onchange="this.form.submit()">
-        <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest first</option>
-        <option value="oldest" {% if filters.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
-        <option value="title"  {% if filters.sort == 'title'  %}selected{% endif %}>Title (A–Z)</option>
+        <option value="newest"     {% if filters.sort == 'newest'     %}selected{% endif %}>Newest first</option>
+        <option value="oldest"     {% if filters.sort == 'oldest'     %}selected{% endif %}>Oldest first</option>
+        <option value="title"      {% if filters.sort == 'title'      %}selected{% endif %}>Title (A–Z)</option>
+        <option value="title_desc" {% if filters.sort == 'title_desc' %}selected{% endif %}>Title (Z–A)</option>
       </select>
 
       <noscript><button type="submit" class="btn btn-secondary">Apply</button></noscript>

@@ -69,9 +69,10 @@ def list_bookmarks(
         sql.append("WHERE " + " AND ".join(where))
 
     order = {
-        "newest": "b.created_at DESC, b.id DESC",
-        "oldest": "b.created_at ASC, b.id ASC",
-        "title": "LOWER(b.title) ASC, b.id ASC",
+        "newest":     "b.created_at DESC, b.id DESC",
+        "oldest":     "b.created_at ASC,  b.id ASC",
+        "title":      "LOWER(b.title) ASC,  b.id ASC",
+        "title_desc": "LOWER(b.title) DESC, b.id DESC",
     }.get(sort, "b.created_at DESC, b.id DESC")
     sql.append(f"ORDER BY {order}")
 
@@ -252,14 +253,16 @@ def list_collections(db: sqlite3.Connection) -> list[dict]:
 def list_collections_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[dict]:
     """Return all collections with their bookmark counts.
 
-    sort="name"  → alphabetical (default)
-    sort="count" → most bookmarks first, then alphabetical
+    sort="name"       → A–Z (default)
+    sort="name_desc"  → Z–A
+    sort="count"      → most bookmarks first, then A–Z
+    sort="count_asc"  → fewest bookmarks first, then A–Z
     """
-    order = (
-        "COUNT(bc.bookmark_id) DESC, LOWER(c.name)"
-        if sort == "count"
-        else "LOWER(c.name)"
-    )
+    order = {
+        "count":     "COUNT(bc.bookmark_id) DESC, LOWER(c.name)",
+        "count_asc": "COUNT(bc.bookmark_id) ASC,  LOWER(c.name)",
+        "name_desc": "LOWER(c.name) DESC",
+    }.get(sort, "LOWER(c.name)")
     rows = db.execute(
         f"""
         SELECT c.id, c.name, COUNT(bc.bookmark_id) AS bookmark_count
@@ -323,14 +326,16 @@ def list_tags(db: sqlite3.Connection) -> list[dict]:
 def list_tags_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[dict]:
     """Return all tags with their bookmark counts.
 
-    sort="name"  → alphabetical (default)
-    sort="count" → most bookmarks first, then alphabetical
+    sort="name"       → A–Z (default)
+    sort="name_desc"  → Z–A
+    sort="count"      → most bookmarks first, then A–Z
+    sort="count_asc"  → fewest bookmarks first, then A–Z
     """
-    order = (
-        "COUNT(bt.bookmark_id) DESC, LOWER(t.name)"
-        if sort == "count"
-        else "LOWER(t.name)"
-    )
+    order = {
+        "count":     "COUNT(bt.bookmark_id) DESC, LOWER(t.name)",
+        "count_asc": "COUNT(bt.bookmark_id) ASC,  LOWER(t.name)",
+        "name_desc": "LOWER(t.name) DESC",
+    }.get(sort, "LOWER(t.name)")
     rows = db.execute(
         f"""
         SELECT t.id, t.name, COUNT(bt.bookmark_id) AS bookmark_count
@@ -384,8 +389,10 @@ def find_duplicate_groups(db: sqlite3.Connection, sort: str = "url") -> list[lis
     Only groups with two or more bookmarks are returned.
     Within each group bookmarks are ordered oldest-first (by created_at, then id).
 
-    sort="url"  → groups ordered alphabetically by URL (default)
-    sort="size" → largest groups first, then alphabetical by URL
+    sort="url"       → groups ordered A–Z by URL (default)
+    sort="url_desc"  → groups ordered Z–A by URL
+    sort="size"      → largest groups first, then A–Z by URL
+    sort="size_asc"  → smallest groups first, then A–Z by URL
 
     Each bookmark dict includes id, url, title, is_favorite, created_at,
     domain, collections and tags.
@@ -425,8 +432,13 @@ def find_duplicate_groups(db: sqlite3.Connection, sort: str = "url") -> list[lis
     if current_group:
         groups.append(current_group)
 
-    if sort == "size":
+    if sort == "url_desc":
+        groups.sort(key=lambda g: g[0]["url"], reverse=True)
+    elif sort == "size":
         groups.sort(key=lambda g: (-len(g), g[0]["url"]))
+    elif sort == "size_asc":
+        groups.sort(key=lambda g: (len(g), g[0]["url"]))
+    # sort="url" is already in URL-ascending order from the SQL ORDER BY.
 
     return groups
 

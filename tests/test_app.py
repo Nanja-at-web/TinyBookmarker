@@ -814,3 +814,70 @@ def test_duplicates_sort_by_size(client, app):
     _insert_bookmark(app, "https://small.example.com/", "S2")
     body = client.get("/duplicates?sort=size").get_data(as_text=True)
     assert body.index("big.example.com") < body.index("small.example.com")
+
+
+# ── Descending / reverse sort options ────────────────────────────────────────
+
+def test_bookmarks_sort_title_desc(client):
+    client.post("/bookmarks/new", data={"url": "https://d.com/1", "title": "Alpha"})
+    client.post("/bookmarks/new", data={"url": "https://d.com/2", "title": "Zebra"})
+    body = client.get("/bookmarks?sort=title_desc").get_data(as_text=True)
+    assert body.index("Zebra") < body.index("Alpha")
+
+
+def test_favorites_sort_title_desc(client):
+    client.post("/bookmarks/new", data={"url": "https://e.com/1", "title": "Alpha", "is_favorite": "on"})
+    client.post("/bookmarks/new", data={"url": "https://e.com/2", "title": "Zebra", "is_favorite": "on"})
+    body = client.get("/favorites?sort=title_desc").get_data(as_text=True)
+    assert body.index("Zebra") < body.index("Alpha")
+
+
+def test_collections_sort_name_desc(client):
+    client.post("/collections/new", data={"name": "Alpha"})
+    client.post("/collections/new", data={"name": "Zebra"})
+    body = client.get("/collections?sort=name_desc").get_data(as_text=True)
+    assert body.index("Zebra") < body.index("Alpha")
+
+
+def test_collections_sort_count_asc(client):
+    # "Small" has 1 bookmark, "Big" has 2 — fewest first → Small before Big.
+    client.post("/bookmarks/new", data={"url": "https://f.com/1", "title": "F1", "new_collections": "Big"})
+    client.post("/bookmarks/new", data={"url": "https://f.com/2", "title": "F2", "new_collections": "Big"})
+    client.post("/bookmarks/new", data={"url": "https://f.com/3", "title": "F3", "new_collections": "Small"})
+    body = client.get("/collections?sort=count_asc").get_data(as_text=True)
+    assert body.index("Small") < body.index("Big")
+
+
+def test_tags_sort_name_desc(client):
+    client.post("/bookmarks/new", data={"url": "https://g.com/1", "title": "G1", "tags": "alpha, zebra"})
+    body = client.get("/tags?sort=name_desc").get_data(as_text=True)
+    assert body.index("zebra") < body.index("alpha")
+
+
+def test_tags_sort_count_asc(client):
+    # "rare" has 1 bookmark, "popular" has 2 — fewest first → rare before popular.
+    client.post("/bookmarks/new", data={"url": "https://h.com/1", "title": "H1", "tags": "popular"})
+    client.post("/bookmarks/new", data={"url": "https://h.com/2", "title": "H2", "tags": "popular"})
+    client.post("/bookmarks/new", data={"url": "https://h.com/3", "title": "H3", "tags": "rare"})
+    body = client.get("/tags?sort=count_asc").get_data(as_text=True)
+    assert body.index("rare") < body.index("popular")
+
+
+def test_duplicates_sort_url_desc(client, app):
+    _insert_bookmark(app, "https://aaa.sort-test.com/", "A1")
+    _insert_bookmark(app, "https://aaa.sort-test.com/", "A2")
+    _insert_bookmark(app, "https://zzz.sort-test.com/", "Z1")
+    _insert_bookmark(app, "https://zzz.sort-test.com/", "Z2")
+    body = client.get("/duplicates?sort=url_desc").get_data(as_text=True)
+    assert body.index("zzz.sort-test.com") < body.index("aaa.sort-test.com")
+
+
+def test_duplicates_sort_size_asc(client, app):
+    # "big" has 3, "small" has 2 — smallest first → small before big.
+    _insert_bookmark(app, "https://big.sort-test.com/", "B1")
+    _insert_bookmark(app, "https://big.sort-test.com/", "B2")
+    _insert_bookmark(app, "https://big.sort-test.com/", "B3")
+    _insert_bookmark(app, "https://small.sort-test.com/", "S1")
+    _insert_bookmark(app, "https://small.sort-test.com/", "S2")
+    body = client.get("/duplicates?sort=size_asc").get_data(as_text=True)
+    assert body.index("small.sort-test.com") < body.index("big.sort-test.com")
