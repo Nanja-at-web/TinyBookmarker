@@ -449,6 +449,14 @@ def test_theme_toggle_present_in_topbar(client):
     assert 'value="dark"' in body
 
 
+def test_theme_toggle_options_have_status_icons(client):
+    body = client.get("/bookmarks").get_data(as_text=True)
+    # Each option must carry its status symbol so the active state is visible.
+    assert '⊙ System' in body
+    assert '☀ Light' in body
+    assert '☽ Dark' in body
+
+
 def test_theme_anti_flash_script_present(client):
     body = client.get("/bookmarks").get_data(as_text=True)
     # The anti-flash script must run before the stylesheet to prevent FOUC.
