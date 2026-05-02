@@ -12,7 +12,7 @@
       <label class="visually-hidden" for="q">Search</label>
       <input id="q" type="search" name="q" value="{{ filters.query }}"
              placeholder="Search bookmarks…">
-      <p class="toolbar-count">{{ items|length }} bookmark{{ '' if items|length == 1 else 's' }}</p>
+      <p class="toolbar-count">{{ pagination.total }} bookmark{{ '' if pagination.total == 1 else 's' }}</p>
     </div>
 
     <div class="toolbar-refine" aria-label="Refine list">
@@ -105,6 +105,7 @@
       </li>
     {% endfor %}
   </ul>
+  {% include '_pagination.html' %}
 {% elif is_filtered %}
   <section class="empty-state empty-state-no-results" aria-live="polite">
     {% if filters.unsorted_only and not filters.query and not filters.collection_id and not filters.tag_id %}

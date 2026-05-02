@@ -645,6 +645,106 @@ def test_session_cookie_secure_enabled_via_env(monkeypatch, tmp_path):
         os.unlink(path)
 
 
+# ── Pagination ────────────────────────────────────────────────────────────────
+
+def test_list_bookmarks_returns_total(app):
+    import sqlite3 as _sqlite3
+    # Insert 3 bookmarks directly and verify total is returned.
+    c = app.test_client()
+    with app.app_context():
+        conn = _sqlite3.connect(app.config["DATABASE"])
+        conn.row_factory = _sqlite3.Row
+        for i in range(3):
+            conn.execute(
+                "INSERT INTO bookmarks (url, title) VALUES (?, ?)",
+                (f"https://example.com/{i}", f"B{i}"),
+            )
+        conn.commit()
+        conn.close()
+    import bookmarks as bm_module
+    with app.app_context():
+        import db as db_module
+        conn2 = db_module.get_db()
+        items, total = bm_module.list_bookmarks(conn2)
+        assert total == 3
+        assert len(items) == 3
+
+
+def test_pagination_page2_returns_second_slice(client):
+    # Create 20 bookmarks; page 2 with per_page=15 should return 5.
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://p.example.com/{i}", "title": f"P{i}"})
+    resp = client.get("/bookmarks?page=2&per_page=15")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert "20 bookmarks" in body   # total shown in toolbar
+    assert "2 / 2" in body          # "page / num_pages"
+
+
+def test_pagination_per_page_15_is_default(client):
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://q.example.com/{i}", "title": f"Q{i}"})
+    resp = client.get("/bookmarks")
+    body = resp.get_data(as_text=True)
+    assert "20 bookmarks" in body
+    assert "1 / 2" in body          # 20 items at 15/page = 2 pages
+
+
+def test_pagination_per_page_30_fits_all(client):
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://r.example.com/{i}", "title": f"R{i}"})
+    resp = client.get("/bookmarks?per_page=30")
+    body = resp.get_data(as_text=True)
+    # All 20 fit on one page — no page nav should appear
+    assert "1 / 1" not in body or "Next" not in body
+
+
+def test_pagination_invalid_per_page_falls_back_to_default(client):
+    client.post("/bookmarks/new", data={"url": "https://fallback.example.com/1", "title": "F"})
+    resp = client.get("/bookmarks?per_page=999")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # per_page=999 is not in PAGE_SIZES; default (15) is used; select shows 15 selected
+    assert '15 per page' in body
+
+
+def test_pagination_preserves_sort_in_next_url(client):
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://s.example.com/{i}", "title": f"S{i}"})
+    resp = client.get("/bookmarks?sort=title&per_page=15")
+    body = resp.get_data(as_text=True)
+    # Next page link must carry sort=title
+    assert "sort=title" in body
+    assert "page=2" in body
+
+
+def test_pagination_collections_paginates(client):
+    for i in range(20):
+        client.post("/collections/new", data={"name": f"Col{i:02d}"})
+    resp = client.get("/collections?per_page=15")
+    body = resp.get_data(as_text=True)
+    assert "1 / 2" in body
+
+
+def test_pagination_tags_paginates(client):
+    for i in range(20):
+        client.post("/bookmarks/new", data={
+            "url": f"https://t.example.com/{i}",
+            "title": f"T{i}",
+            "tags": f"tag{i:02d}",
+        })
+    resp = client.get("/tags?per_page=15")
+    body = resp.get_data(as_text=True)
+    assert "1 / 2" in body
+
+
+def test_pagination_per_page_selector_renders(client):
+    client.post("/bookmarks/new", data={"url": "https://x.example.com/1", "title": "X"})
+    body = client.get("/bookmarks").get_data(as_text=True)
+    assert "per page" in body
+    assert 'name="per_page"' in body
+
+
 # ── Collections screen ────────────────────────────────────────────────────────
 
 def test_collections_empty_state(client):

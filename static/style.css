@@ -741,6 +741,33 @@ html[data-theme="dark"] .icon-btn-on:hover { color: #d4a428; }
 }
 .dup-item-actions .btn-link:hover { color: var(--accent); text-decoration: none; }
 
+/* ── Pagination ─────────────────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.pagination-info {
+  font-size: .85rem;
+  color: var(--text-muted);
+  padding: 0 .25rem;
+}
+.pagination-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+.pagination-per-page { margin: 0; }
+
 /* ── Login page ─────────────────────────────────────────────────────────── */
 .page-login {
   display: flex;

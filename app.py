@@ -1,6 +1,7 @@
 import hmac
 import os
 import secrets
+from urllib.parse import urlencode
 
 from flask import (
     Flask,
@@ -99,13 +100,16 @@ def register_routes(app: Flask) -> None:
     def all_bookmarks():
         conn = db.get_db()
         params = _parse_list_params(request.args)
-        items = bm.list_bookmarks(conn, **params)
+        page, per_page = _parse_pagination_params(request.args)
+        items, total = bm.list_bookmarks(conn, **params, page=page, per_page=per_page)
+        pagination = _build_pagination(request.args, total, page, per_page)
         return render_template(
             "bookmarks_list.html",
             page="all_bookmarks",
             page_title="All Bookmarks",
             page_subtitle="Your full bookmark library",
             items=items,
+            pagination=pagination,
             collections=bm.list_collections(conn),
             tags=bm.list_tags(conn),
             filters=params,
@@ -118,13 +122,16 @@ def register_routes(app: Flask) -> None:
         conn = db.get_db()
         params = _parse_list_params(request.args)
         params["favorites_only"] = True
-        items = bm.list_bookmarks(conn, **params)
+        page, per_page = _parse_pagination_params(request.args)
+        items, total = bm.list_bookmarks(conn, **params, page=page, per_page=per_page)
+        pagination = _build_pagination(request.args, total, page, per_page)
         return render_template(
             "bookmarks_list.html",
             page="favorites",
             page_title="Favorites",
             page_subtitle="Your personal quick-access bookmarks.",
             items=items,
+            pagination=pagination,
             collections=bm.list_collections(conn),
             tags=bm.list_tags(conn),
             filters=params,
@@ -278,11 +285,17 @@ def register_routes(app: Flask) -> None:
         sort = request.args.get("sort", "name")
         if sort not in {"name", "name_desc", "count", "count_asc"}:
             sort = "name"
+        page, per_page = _parse_pagination_params(request.args)
+        collections_list, total = bm.list_collections_with_counts(
+            conn, sort=sort, page=page, per_page=per_page
+        )
+        pagination = _build_pagination(request.args, total, page, per_page)
         return render_template(
             "collections.html",
             page="collections",
             page_title="Collections",
-            collections=bm.list_collections_with_counts(conn, sort=sort),
+            collections=collections_list,
+            pagination=pagination,
             sort=sort,
             create_error=None,
             create_name="",
@@ -294,11 +307,15 @@ def register_routes(app: Flask) -> None:
         name = (request.form.get("name") or "").strip()
         _id, error = bm.create_collection(conn, name)
         if error:
+            collections_list, total = bm.list_collections_with_counts(conn)
+            pagination = _build_pagination({}, total, 1, bm.PAGE_SIZE_DEFAULT)
             return render_template(
                 "collections.html",
                 page="collections",
                 page_title="Collections",
-                collections=bm.list_collections_with_counts(conn),
+                collections=collections_list,
+                pagination=pagination,
+                sort="name",
                 create_error=error,
                 create_name=name,
             ), 400
@@ -351,11 +368,15 @@ def register_routes(app: Flask) -> None:
         sort = request.args.get("sort", "name")
         if sort not in {"name", "name_desc", "count", "count_asc"}:
             sort = "name"
+        page, per_page = _parse_pagination_params(request.args)
+        tags_list, total = bm.list_tags_with_counts(conn, sort=sort, page=page, per_page=per_page)
+        pagination = _build_pagination(request.args, total, page, per_page)
         return render_template(
             "tags.html",
             page="tags",
             page_title="Tags",
-            tags=bm.list_tags_with_counts(conn, sort=sort),
+            tags=tags_list,
+            pagination=pagination,
             sort=sort,
         )
 
@@ -405,12 +426,18 @@ def register_routes(app: Flask) -> None:
         sort = request.args.get("sort", "url")
         if sort not in {"url", "url_desc", "size", "size_asc"}:
             sort = "url"
-        groups = bm.find_duplicate_groups(conn, sort=sort)
+        page, per_page = _parse_pagination_params(request.args)
+        all_groups = bm.find_duplicate_groups(conn, sort=sort)
+        total = len(all_groups)
+        offset = (max(1, page) - 1) * per_page
+        groups = all_groups[offset: offset + per_page]
+        pagination = _build_pagination(request.args, total, page, per_page)
         return render_template(
             "duplicates.html",
             page="duplicates",
             page_title="Duplicates",
             groups=groups,
+            pagination=pagination,
             sort=sort,
         )
 
@@ -503,6 +530,51 @@ def _parse_form(form) -> tuple[dict, dict]:
         },
         errors,
     )
+
+
+def _parse_pagination_params(args) -> tuple[int, int]:
+    """Parse ?page= and ?per_page= from query args, with safe fallbacks."""
+    try:
+        page = max(1, int(args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        per_page = int(args.get("per_page", bm.PAGE_SIZE_DEFAULT))
+        if per_page not in bm.PAGE_SIZES:
+            per_page = bm.PAGE_SIZE_DEFAULT
+    except (ValueError, TypeError):
+        per_page = bm.PAGE_SIZE_DEFAULT
+    return page, per_page
+
+
+def _build_pagination(args, total: int, page: int, per_page: int) -> dict:
+    """Return a dict with all data needed to render the pagination widget.
+
+    Preserves every existing query-string key except 'page' and 'per_page'
+    so filters and sort order are carried through when navigating pages.
+    """
+    num_pages = max(1, (total + per_page - 1) // per_page)
+    page = max(1, min(page, num_pages))
+
+    def _qs(**overrides) -> str:
+        params = {k: v for k, v in args.items() if k not in ("page", "per_page")}
+        params.update({k: str(v) for k, v in overrides.items()})
+        return "?" + urlencode(params)
+
+    return {
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "num_pages": num_pages,
+        "has_prev": page > 1,
+        "has_next": page < num_pages,
+        "prev_url": _qs(page=page - 1, per_page=per_page) if page > 1 else None,
+        "next_url": _qs(page=page + 1, per_page=per_page) if page < num_pages else None,
+        "per_page_options": [
+            {"value": pp, "url": _qs(page=1, per_page=pp), "selected": pp == per_page}
+            for pp in bm.PAGE_SIZES
+        ],
+    }
 
 
 def _get_csrf_token() -> str:

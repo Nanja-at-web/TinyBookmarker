@@ -2,6 +2,11 @@ import sqlite3
 from typing import Iterable
 from urllib.parse import urlparse
 
+# Pagination constants.  PAGE_SIZE_DEFAULT can be swapped for a Settings lookup
+# later without touching the call sites.
+PAGE_SIZE_DEFAULT: int = 15
+PAGE_SIZES: tuple[int, ...] = (15, 30, 45)
+
 
 def domain_of(url: str) -> str:
     try:
@@ -31,23 +36,29 @@ def list_bookmarks(
     tag_id: int | None = None,
     query: str = "",
     sort: str = "newest",
-) -> list[dict]:
-    sql = ["SELECT b.* FROM bookmarks b"]
+    page: int = 1,
+    per_page: int = PAGE_SIZE_DEFAULT,
+) -> tuple[list[dict], int]:
+    """Return (bookmarks_on_page, total_count).
+
+    Paginates via SQL LIMIT/OFFSET so only the requested slice is loaded.
+    The total_count reflects all matching bookmarks regardless of page.
+    """
+    joins: list[str] = []
     params: list = []
     where: list[str] = []
 
     if collection_id is not None:
-        sql.append("JOIN bookmark_collections bc ON bc.bookmark_id = b.id")
+        joins.append("JOIN bookmark_collections bc ON bc.bookmark_id = b.id")
         where.append("bc.collection_id = ?")
         params.append(collection_id)
     if tag_id is not None:
-        sql.append("JOIN bookmark_tags bt ON bt.bookmark_id = b.id")
+        joins.append("JOIN bookmark_tags bt ON bt.bookmark_id = b.id")
         where.append("bt.tag_id = ?")
         params.append(tag_id)
     if favorites_only:
         where.append("b.is_favorite = 1")
     if unsorted_only:
-        # "Unsorted" = saved but not yet structurally organized: no collection AND no tag.
         where.append(
             "NOT EXISTS (SELECT 1 FROM bookmark_collections WHERE bookmark_id = b.id) "
             "AND NOT EXISTS (SELECT 1 FROM bookmark_tags WHERE bookmark_id = b.id)"
@@ -65,8 +76,13 @@ def list_bookmarks(
         )
         params.extend([like, like, like, like, like])
 
-    if where:
-        sql.append("WHERE " + " AND ".join(where))
+    where_clause = ("WHERE " + " AND ".join(where)) if where else ""
+    joins_str = " ".join(joins)
+
+    total: int = db.execute(
+        f"SELECT COUNT(DISTINCT b.id) FROM bookmarks b {joins_str} {where_clause}",
+        params,
+    ).fetchone()[0]
 
     order = {
         "newest":     "b.created_at DESC, b.id DESC",
@@ -74,16 +90,22 @@ def list_bookmarks(
         "title":      "LOWER(b.title) ASC,  b.id ASC",
         "title_desc": "LOWER(b.title) DESC, b.id DESC",
     }.get(sort, "b.created_at DESC, b.id DESC")
-    sql.append(f"ORDER BY {order}")
 
-    rows = db.execute(" ".join(sql), params).fetchall()
+    page = max(1, page)
+    offset = (page - 1) * per_page
+    rows = db.execute(
+        f"SELECT b.* FROM bookmarks b {joins_str} {where_clause}"
+        f" ORDER BY {order} LIMIT ? OFFSET ?",
+        params + [per_page, offset],
+    ).fetchall()
+
     bookmarks = [dict(r) for r in rows]
     if bookmarks:
         ids = [b["id"] for b in bookmarks]
         _attach_assignments(db, bookmarks, ids)
     for b in bookmarks:
         b["domain"] = domain_of(b["url"])
-    return bookmarks
+    return bookmarks, total
 
 
 def _attach_assignments(db: sqlite3.Connection, bookmarks: list[dict], ids: Iterable[int]) -> None:
@@ -250,19 +272,26 @@ def list_collections(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM collections ORDER BY LOWER(name)")]
 
 
-def list_collections_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[dict]:
-    """Return all collections with their bookmark counts.
+def list_collections_with_counts(
+    db: sqlite3.Connection,
+    sort: str = "name",
+    page: int = 1,
+    per_page: int = PAGE_SIZE_DEFAULT,
+) -> tuple[list[dict], int]:
+    """Return (collections_on_page, total_count) with bookmark counts per collection.
 
     sort="name"       → A–Z (default)
     sort="name_desc"  → Z–A
     sort="count"      → most bookmarks first, then A–Z
     sort="count_asc"  → fewest bookmarks first, then A–Z
     """
+    total: int = db.execute("SELECT COUNT(*) FROM collections").fetchone()[0]
     order = {
         "count":     "COUNT(bc.bookmark_id) DESC, LOWER(c.name)",
         "count_asc": "COUNT(bc.bookmark_id) ASC,  LOWER(c.name)",
         "name_desc": "LOWER(c.name) DESC",
     }.get(sort, "LOWER(c.name)")
+    offset = (max(1, page) - 1) * per_page
     rows = db.execute(
         f"""
         SELECT c.id, c.name, COUNT(bc.bookmark_id) AS bookmark_count
@@ -270,9 +299,11 @@ def list_collections_with_counts(db: sqlite3.Connection, sort: str = "name") -> 
           LEFT JOIN bookmark_collections bc ON bc.collection_id = c.id
          GROUP BY c.id, c.name
          ORDER BY {order}
-        """
+         LIMIT ? OFFSET ?
+        """,
+        (per_page, offset),
     ).fetchall()
-    return [dict(r) for r in rows]
+    return [dict(r) for r in rows], total
 
 
 def get_collection(db: sqlite3.Connection, collection_id: int) -> dict | None:
@@ -323,19 +354,26 @@ def list_tags(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM tags ORDER BY LOWER(name)")]
 
 
-def list_tags_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[dict]:
-    """Return all tags with their bookmark counts.
+def list_tags_with_counts(
+    db: sqlite3.Connection,
+    sort: str = "name",
+    page: int = 1,
+    per_page: int = PAGE_SIZE_DEFAULT,
+) -> tuple[list[dict], int]:
+    """Return (tags_on_page, total_count) with bookmark counts per tag.
 
     sort="name"       → A–Z (default)
     sort="name_desc"  → Z–A
     sort="count"      → most bookmarks first, then A–Z
     sort="count_asc"  → fewest bookmarks first, then A–Z
     """
+    total: int = db.execute("SELECT COUNT(*) FROM tags").fetchone()[0]
     order = {
         "count":     "COUNT(bt.bookmark_id) DESC, LOWER(t.name)",
         "count_asc": "COUNT(bt.bookmark_id) ASC,  LOWER(t.name)",
         "name_desc": "LOWER(t.name) DESC",
     }.get(sort, "LOWER(t.name)")
+    offset = (max(1, page) - 1) * per_page
     rows = db.execute(
         f"""
         SELECT t.id, t.name, COUNT(bt.bookmark_id) AS bookmark_count
@@ -343,9 +381,11 @@ def list_tags_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[di
           LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
          GROUP BY t.id, t.name
          ORDER BY {order}
-        """
+         LIMIT ? OFFSET ?
+        """,
+        (per_page, offset),
     ).fetchall()
-    return [dict(r) for r in rows]
+    return [dict(r) for r in rows], total
 
 
 def get_tag(db: sqlite3.Connection, tag_id: int) -> dict | None:
