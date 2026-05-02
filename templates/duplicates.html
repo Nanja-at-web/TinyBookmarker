@@ -7,7 +7,15 @@
 </header>
 
 {% if groups %}
-  <p class="dup-intro">Each group shares an identical URL. Keep the bookmark you want and delete the rest.</p>
+  <div class="dup-toolbar">
+    <p class="dup-intro">Each group shares an identical URL. Keep the bookmark you want and delete the rest.</p>
+    <form class="list-sort" action="{{ url_for('duplicates') }}" method="get">
+      <select name="sort" class="select-sort" onchange="this.form.submit()" aria-label="Sort groups">
+        <option value="url"  {% if sort == 'url'  %}selected{% endif %}>URL</option>
+        <option value="size" {% if sort == 'size' %}selected{% endif %}>Largest first</option>
+      </select>
+    </form>
+  </div>
 
   <div class="dup-groups">
     {% for group in groups %}

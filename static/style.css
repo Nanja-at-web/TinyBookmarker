@@ -624,6 +624,24 @@ html[data-theme="dark"] .badge-tag        { background: #22193a; color: #9b80d4;
 html[data-theme="dark"] .icon-btn-on       { color: #e8b83a; }
 html[data-theme="dark"] .icon-btn-on:hover { color: #d4a428; }
 
+/* Sort bar used on Collections, Tags and Duplicates pages. */
+.list-sort {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: .6rem;
+}
+
+/* Duplicates toolbar: intro text left, sort select right. */
+.dup-toolbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.dup-toolbar .dup-intro { margin: 0; }
+.dup-toolbar .list-sort { margin-bottom: 0; }
+
 /* ── Duplicate review groups ───────────────────────────────────────────────
    Calm, card-per-group layout. Each group is a bordered card with a muted
    header showing the shared URL and a plain list of bookmarks below.      */

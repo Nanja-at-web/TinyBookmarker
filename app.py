@@ -218,11 +218,15 @@ def register_routes(app: Flask) -> None:
     @app.get("/collections")
     def collections():
         conn = db.get_db()
+        sort = request.args.get("sort", "name")
+        if sort not in {"name", "count"}:
+            sort = "name"
         return render_template(
             "collections.html",
             page="collections",
             page_title="Collections",
-            collections=bm.list_collections_with_counts(conn),
+            collections=bm.list_collections_with_counts(conn, sort=sort),
+            sort=sort,
             create_error=None,
             create_name="",
         )
@@ -287,11 +291,15 @@ def register_routes(app: Flask) -> None:
     @app.get("/tags")
     def tags():
         conn = db.get_db()
+        sort = request.args.get("sort", "name")
+        if sort not in {"name", "count"}:
+            sort = "name"
         return render_template(
             "tags.html",
             page="tags",
             page_title="Tags",
-            tags=bm.list_tags_with_counts(conn),
+            tags=bm.list_tags_with_counts(conn, sort=sort),
+            sort=sort,
         )
 
     @app.route("/tags/<int:tag_id>/edit", methods=["GET", "POST"])
@@ -337,12 +345,16 @@ def register_routes(app: Flask) -> None:
     @app.get("/duplicates")
     def duplicates():
         conn = db.get_db()
-        groups = bm.find_duplicate_groups(conn)
+        sort = request.args.get("sort", "url")
+        if sort not in {"url", "size"}:
+            sort = "url"
+        groups = bm.find_duplicate_groups(conn, sort=sort)
         return render_template(
             "duplicates.html",
             page="duplicates",
             page_title="Duplicates",
             groups=groups,
+            sort=sort,
         )
 
     @app.post("/duplicates/<int:bookmark_id>/delete")

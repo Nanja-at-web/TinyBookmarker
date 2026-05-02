@@ -249,15 +249,24 @@ def list_collections(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM collections ORDER BY LOWER(name)")]
 
 
-def list_collections_with_counts(db: sqlite3.Connection) -> list[dict]:
-    """Return all collections with their bookmark counts, sorted alphabetically."""
+def list_collections_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[dict]:
+    """Return all collections with their bookmark counts.
+
+    sort="name"  → alphabetical (default)
+    sort="count" → most bookmarks first, then alphabetical
+    """
+    order = (
+        "COUNT(bc.bookmark_id) DESC, LOWER(c.name)"
+        if sort == "count"
+        else "LOWER(c.name)"
+    )
     rows = db.execute(
-        """
+        f"""
         SELECT c.id, c.name, COUNT(bc.bookmark_id) AS bookmark_count
           FROM collections c
           LEFT JOIN bookmark_collections bc ON bc.collection_id = c.id
          GROUP BY c.id, c.name
-         ORDER BY LOWER(c.name)
+         ORDER BY {order}
         """
     ).fetchall()
     return [dict(r) for r in rows]
@@ -311,15 +320,24 @@ def list_tags(db: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in db.execute("SELECT id, name FROM tags ORDER BY LOWER(name)")]
 
 
-def list_tags_with_counts(db: sqlite3.Connection) -> list[dict]:
-    """Return all tags with their bookmark counts, sorted alphabetically."""
+def list_tags_with_counts(db: sqlite3.Connection, sort: str = "name") -> list[dict]:
+    """Return all tags with their bookmark counts.
+
+    sort="name"  → alphabetical (default)
+    sort="count" → most bookmarks first, then alphabetical
+    """
+    order = (
+        "COUNT(bt.bookmark_id) DESC, LOWER(t.name)"
+        if sort == "count"
+        else "LOWER(t.name)"
+    )
     rows = db.execute(
-        """
+        f"""
         SELECT t.id, t.name, COUNT(bt.bookmark_id) AS bookmark_count
           FROM tags t
           LEFT JOIN bookmark_tags bt ON bt.tag_id = t.id
          GROUP BY t.id, t.name
-         ORDER BY LOWER(t.name)
+         ORDER BY {order}
         """
     ).fetchall()
     return [dict(r) for r in rows]
@@ -360,12 +378,15 @@ def count_bookmarks_with_url(db: sqlite3.Connection, url: str) -> int:
     return row[0]
 
 
-def find_duplicate_groups(db: sqlite3.Connection) -> list[list[dict]]:
+def find_duplicate_groups(db: sqlite3.Connection, sort: str = "url") -> list[list[dict]]:
     """Return groups of bookmarks that share the exact same URL.
 
     Only groups with two or more bookmarks are returned.
     Within each group bookmarks are ordered oldest-first (by created_at, then id).
-    Groups are ordered alphabetically by URL.
+
+    sort="url"  → groups ordered alphabetically by URL (default)
+    sort="size" → largest groups first, then alphabetical by URL
+
     Each bookmark dict includes id, url, title, is_favorite, created_at,
     domain, collections and tags.
     """
@@ -403,6 +424,9 @@ def find_duplicate_groups(db: sqlite3.Connection) -> list[list[dict]]:
             current_group.append(b)
     if current_group:
         groups.append(current_group)
+
+    if sort == "size":
+        groups.sort(key=lambda g: (-len(g), g[0]["url"]))
 
     return groups
 

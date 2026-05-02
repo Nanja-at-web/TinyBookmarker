@@ -20,6 +20,12 @@
 </form>
 
 {% if collections %}
+  <form class="list-sort" action="{{ url_for('collections') }}" method="get">
+    <select name="sort" class="select-sort" onchange="this.form.submit()" aria-label="Sort collections">
+      <option value="name"  {% if sort == 'name'  %}selected{% endif %}>A → Z</option>
+      <option value="count" {% if sort == 'count' %}selected{% endif %}>Most bookmarks</option>
+    </select>
+  </form>
   <ul class="collection-list">
     {% for c in collections %}
       <li class="collection-row">

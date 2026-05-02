@@ -753,3 +753,64 @@ def test_delete_duplicate_blocked_when_last_copy(client, app):
     # The bookmark must still exist.
     bm_body = client.get("/bookmarks").get_data(as_text=True)
     assert "Only Copy" in bm_body
+
+
+# ── Sorting ───────────────────────────────────────────────────────────────────
+
+def test_collections_default_sort_is_name(client):
+    client.post("/collections/new", data={"name": "Zebra"})
+    client.post("/collections/new", data={"name": "Alpha"})
+    body = client.get("/collections").get_data(as_text=True)
+    assert body.index("Alpha") < body.index("Zebra")
+
+
+def test_collections_sort_by_count(client):
+    # "Big" gets 2 bookmarks, "Small" gets 1 — sort=count should list Big first.
+    client.post("/bookmarks/new", data={"url": "https://a.com/1", "title": "A1", "new_collections": "Big"})
+    client.post("/bookmarks/new", data={"url": "https://a.com/2", "title": "A2", "new_collections": "Big"})
+    client.post("/bookmarks/new", data={"url": "https://a.com/3", "title": "A3", "new_collections": "Small"})
+    body = client.get("/collections?sort=count").get_data(as_text=True)
+    assert body.index("Big") < body.index("Small")
+
+
+def test_collections_sort_select_reflects_current_sort(client):
+    client.post("/collections/new", data={"name": "Test"})
+    body = client.get("/collections?sort=count").get_data(as_text=True)
+    # The count option must be marked selected.
+    assert 'value="count"' in body
+    assert 'selected' in body
+
+
+def test_tags_default_sort_is_name(client):
+    client.post("/bookmarks/new", data={"url": "https://b.com/1", "title": "B1", "tags": "zebra, alpha"})
+    body = client.get("/tags").get_data(as_text=True)
+    assert body.index("alpha") < body.index("zebra")
+
+
+def test_tags_sort_by_count(client):
+    # "popular" gets 2 bookmarks, "rare" gets 1.
+    client.post("/bookmarks/new", data={"url": "https://c.com/1", "title": "C1", "tags": "popular"})
+    client.post("/bookmarks/new", data={"url": "https://c.com/2", "title": "C2", "tags": "popular"})
+    client.post("/bookmarks/new", data={"url": "https://c.com/3", "title": "C3", "tags": "rare"})
+    body = client.get("/tags?sort=count").get_data(as_text=True)
+    assert body.index("popular") < body.index("rare")
+
+
+def test_duplicates_default_sort_is_url(client, app):
+    _insert_bookmark(app, "https://zzz.example.com/", "Z1")
+    _insert_bookmark(app, "https://zzz.example.com/", "Z2")
+    _insert_bookmark(app, "https://aaa.example.com/", "A1")
+    _insert_bookmark(app, "https://aaa.example.com/", "A2")
+    body = client.get("/duplicates").get_data(as_text=True)
+    assert body.index("aaa.example.com") < body.index("zzz.example.com")
+
+
+def test_duplicates_sort_by_size(client, app):
+    # "big" group has 3 copies, "small" group has 2.
+    _insert_bookmark(app, "https://big.example.com/", "B1")
+    _insert_bookmark(app, "https://big.example.com/", "B2")
+    _insert_bookmark(app, "https://big.example.com/", "B3")
+    _insert_bookmark(app, "https://small.example.com/", "S1")
+    _insert_bookmark(app, "https://small.example.com/", "S2")
+    body = client.get("/duplicates?sort=size").get_data(as_text=True)
+    assert body.index("big.example.com") < body.index("small.example.com")
