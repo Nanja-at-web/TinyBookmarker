@@ -25,6 +25,7 @@ def create_app(config: dict | None = None) -> Flask:
             "TINYBOOKMARKER_DB",
             os.path.join(app.instance_path, "tinybookmarker.sqlite"),
         ),
+        AUTH_PASSWORD=os.environ.get("TINYBOOKMARKER_PASSWORD", "").strip(),
     )
     if config:
         app.config.update(config)
@@ -46,6 +47,39 @@ def register_routes(app: Flask) -> None:
             expected = session.get("csrf_token", "")
             if not expected or not hmac.compare_digest(token, expected):
                 abort(403)
+
+    @app.before_request
+    def _check_auth():
+        if not app.config.get("AUTH_PASSWORD"):
+            return  # auth disabled — local dev or unconfigured
+        if request.endpoint in ("login", "logout", "static"):
+            return  # public endpoints
+        if not session.get("authenticated"):
+            return redirect(url_for("login", next=request.path))
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        if not app.config.get("AUTH_PASSWORD"):
+            return redirect(url_for("all_bookmarks"))
+        if session.get("authenticated"):
+            return redirect(url_for("all_bookmarks"))
+        error = None
+        if request.method == "POST":
+            password = request.form.get("password", "")
+            if hmac.compare_digest(password, app.config["AUTH_PASSWORD"]):
+                session["authenticated"] = True
+                next_url = request.form.get("next") or url_for("all_bookmarks")
+                if not next_url.startswith("/"):
+                    next_url = url_for("all_bookmarks")
+                return redirect(next_url)
+            error = "Wrong password."
+        return render_template("login.html", error=error), (401 if error else 200)
+
+    @app.post("/logout")
+    def logout():
+        session.pop("authenticated", None)
+        flash("You have been logged out.", "success")
+        return redirect(url_for("login"))
 
     @app.get("/")
     def index():

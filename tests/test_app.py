@@ -503,6 +503,101 @@ def test_csrf_token_hidden_field_present_in_forms(client):
         assert 'name="csrf_token"' in body, f"csrf_token field missing on {path}"
 
 
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+def test_auth_disabled_when_no_password_set(app):
+    # Default app fixture has no password — every route is publicly accessible.
+    raw = app.test_client()
+    assert raw.get("/bookmarks").status_code == 200
+
+
+def test_auth_login_page_redirects_to_bookmarks_when_disabled(app):
+    raw = app.test_client()
+    resp = raw.get("/login")
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/bookmarks")
+
+
+def test_auth_redirects_unauthenticated_request_to_login(auth_app):
+    raw = auth_app.test_client()
+    resp = raw.get("/bookmarks")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_auth_login_page_is_accessible_without_session(auth_app):
+    raw = auth_app.test_client()
+    resp = raw.get("/login")
+    assert resp.status_code == 200
+    assert "Password" in resp.get_data(as_text=True)
+
+
+def test_auth_wrong_password_returns_401(auth_app):
+    raw = auth_app.test_client()
+    with raw.session_transaction() as sess:
+        sess["csrf_token"] = "tok"
+    resp = raw.post("/login", data={"password": "wrong", "csrf_token": "tok"})
+    assert resp.status_code == 401
+    assert "Wrong password" in resp.get_data(as_text=True)
+
+
+def test_auth_correct_password_sets_session_and_redirects(auth_app):
+    raw = auth_app.test_client()
+    with raw.session_transaction() as sess:
+        sess["csrf_token"] = "tok"
+    resp = raw.post("/login", data={"password": "testpass", "csrf_token": "tok"})
+    assert resp.status_code == 302
+    with raw.session_transaction() as sess:
+        assert sess.get("authenticated") is True
+
+
+def test_auth_after_login_can_access_protected_routes(auth_app):
+    from conftest import CsrfTestClient
+    c = CsrfTestClient(auth_app.test_client())
+    with c._client.session_transaction() as sess:
+        sess["authenticated"] = True
+    assert c.get("/bookmarks").status_code == 200
+
+
+def test_auth_logout_clears_session_and_redirects_to_login(auth_app):
+    from conftest import CsrfTestClient
+    c = CsrfTestClient(auth_app.test_client())
+    with c._client.session_transaction() as sess:
+        sess["authenticated"] = True
+    resp = c.post("/logout")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+    with c._client.session_transaction() as sess:
+        assert not sess.get("authenticated")
+
+
+def test_auth_login_preserves_next_param(auth_app):
+    raw = auth_app.test_client()
+    with raw.session_transaction() as sess:
+        sess["csrf_token"] = "tok"
+    resp = raw.post(
+        "/login?next=/collections",
+        data={"password": "testpass", "csrf_token": "tok", "next": "/collections"},
+    )
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/collections")
+
+
+def test_auth_logout_button_visible_when_authenticated(auth_app):
+    from conftest import CsrfTestClient
+    c = CsrfTestClient(auth_app.test_client())
+    with c._client.session_transaction() as sess:
+        sess["authenticated"] = True
+    body = c.get("/bookmarks").get_data(as_text=True)
+    assert "Logout" in body
+
+
+def test_auth_logout_button_absent_when_auth_disabled(client):
+    # When no password is set the logout form must not appear.
+    body = client.get("/bookmarks").get_data(as_text=True)
+    assert "Logout" not in body
+
+
 # ── Collections screen ────────────────────────────────────────────────────────
 
 def test_collections_empty_state(client):

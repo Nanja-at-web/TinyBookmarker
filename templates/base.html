@@ -33,7 +33,14 @@
       <option value="light">☀ Light</option>
       <option value="dark">☽ Dark</option>
     </select>
+    {% if session.get('authenticated') %}
+    <form class="topbar-logout" method="post" action="{{ url_for('logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-logout" title="Log out">Logout</button>
+    </form>
+    {% else %}
     <span class="topbar-profile" aria-hidden="true">Profile</span>
+    {% endif %}
   </header>
 
   <div class="layout">

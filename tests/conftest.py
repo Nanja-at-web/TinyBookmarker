@@ -48,3 +48,21 @@ def app():
 @pytest.fixture
 def client(app):
     return CsrfTestClient(app.test_client())
+
+
+@pytest.fixture
+def auth_app():
+    """App with AUTH_PASSWORD set — used for auth-specific tests."""
+    fd, path = tempfile.mkstemp(suffix=".sqlite")
+    os.close(fd)
+    application = create_app({
+        "TESTING": True,
+        "DATABASE": path,
+        "SECRET_KEY": "test",
+        "AUTH_PASSWORD": "testpass",
+    })
+    yield application
+    try:
+        os.unlink(path)
+    except OSError:
+        pass

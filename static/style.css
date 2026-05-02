@@ -740,3 +740,56 @@ html[data-theme="dark"] .icon-btn-on:hover { color: #d4a428; }
   padding: .45rem .2rem;
 }
 .dup-item-actions .btn-link:hover { color: var(--accent); text-decoration: none; }
+
+/* ── Login page ─────────────────────────────────────────────────────────── */
+.page-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+}
+.login-wrap {
+  width: 100%;
+  max-width: 340px;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+.login-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 .25rem;
+}
+.login-subtitle {
+  font-size: .9rem;
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+}
+.login-error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: .5rem .75rem;
+  font-size: .9rem;
+  margin-bottom: 1rem;
+}
+.btn-full { width: 100%; margin-top: .5rem; }
+
+/* ── Topbar logout ──────────────────────────────────────────────────────── */
+.topbar-logout { margin: 0; }
+.btn-logout {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: .5rem .75rem;
+  font: inherit;
+  font-size: .9rem;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.btn-logout:hover { color: var(--text); }
