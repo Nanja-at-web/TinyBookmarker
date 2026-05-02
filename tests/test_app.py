@@ -503,6 +503,17 @@ def test_csrf_token_hidden_field_present_in_forms(client):
         assert 'name="csrf_token"' in body, f"csrf_token field missing on {path}"
 
 
+def test_csrf_token_uses_straight_quotes_in_collections(client):
+    # Guard against smart/curly quotes in HTML attributes — browsers won't
+    # recognise type="hidden" and will render the input as visible text.
+    client.post("/collections/new", data={"name": "Guard"})
+    body = client.get("/collections").get_data(as_text=True)
+    # The hidden input must use ASCII straight-quote delimiters.
+    assert 'type="hidden"' in body
+    # No curly left/right double-quote characters anywhere on the page.
+    assert "“" not in body and "”" not in body
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def test_auth_disabled_when_no_password_set(app):
