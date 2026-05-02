@@ -598,6 +598,53 @@ def test_auth_logout_button_absent_when_auth_disabled(client):
     assert "Logout" not in body
 
 
+# ── Session cookie settings ───────────────────────────────────────────────────
+
+def test_session_cookie_httponly_is_true(app):
+    assert app.config["SESSION_COOKIE_HTTPONLY"] is True
+
+
+def test_session_cookie_samesite_is_lax(app):
+    assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+
+
+def test_session_cookie_secure_is_false_by_default(app):
+    # Dev default — no TINYBOOKMARKER_SECURE_COOKIES env var set.
+    assert app.config["SESSION_COOKIE_SECURE"] is False
+
+
+def test_session_cookie_secure_enabled_via_config(tmp_path):
+    # Simulate production: pass SESSION_COOKIE_SECURE=True via config dict
+    # (same code path used when TINYBOOKMARKER_SECURE_COOKIES env var is set).
+    import os, tempfile
+    from app import create_app as _create
+    fd, path = tempfile.mkstemp(suffix=".sqlite")
+    os.close(fd)
+    try:
+        a = _create({
+            "TESTING": True,
+            "DATABASE": path,
+            "SECRET_KEY": "test",
+            "SESSION_COOKIE_SECURE": True,
+        })
+        assert a.config["SESSION_COOKIE_SECURE"] is True
+    finally:
+        os.unlink(path)
+
+
+def test_session_cookie_secure_enabled_via_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("TINYBOOKMARKER_SECURE_COOKIES", "true")
+    import os, tempfile
+    from app import create_app as _create
+    fd, path = tempfile.mkstemp(suffix=".sqlite")
+    os.close(fd)
+    try:
+        a = _create({"TESTING": True, "DATABASE": path, "SECRET_KEY": "test"})
+        assert a.config["SESSION_COOKIE_SECURE"] is True
+    finally:
+        os.unlink(path)
+
+
 # ── Collections screen ────────────────────────────────────────────────────────
 
 def test_collections_empty_state(client):

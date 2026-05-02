@@ -19,6 +19,9 @@ import db
 
 def create_app(config: dict | None = None) -> Flask:
     app = Flask(__name__)
+    _secure_cookies = os.environ.get("TINYBOOKMARKER_SECURE_COOKIES", "").lower() in (
+        "1", "true", "yes"
+    )
     app.config.update(
         SECRET_KEY=os.environ.get("TINYBOOKMARKER_SECRET", "dev-secret-change-me"),
         DATABASE=os.environ.get(
@@ -26,6 +29,13 @@ def create_app(config: dict | None = None) -> Flask:
             os.path.join(app.instance_path, "tinybookmarker.sqlite"),
         ),
         AUTH_PASSWORD=os.environ.get("TINYBOOKMARKER_PASSWORD", "").strip(),
+        # Session cookie hardening.
+        # HTTPONLY prevents JS access to the session cookie.
+        # SAMESITE=Lax blocks cross-site POST (defence-in-depth alongside CSRF tokens).
+        # SECURE must be enabled in production (HTTPS); leave off for plain-HTTP dev.
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=_secure_cookies,
     )
     if config:
         app.config.update(config)
