@@ -766,6 +766,27 @@ html[data-theme="dark"] .icon-btn-on:hover { color: #d4a428; }
   opacity: .4;
   pointer-events: none;
 }
+.pagination-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 .3rem;
+  border-radius: var(--radius);
+  font-size: .85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  line-height: 1;
+}
+.pagination-page:hover { background: var(--accent-soft); color: var(--accent); }
+.pagination-page-current {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: default;
+}
+.pagination-page-current:hover { background: var(--accent); color: #fff; }
 .pagination-per-page { margin: 0; }
 
 /* ── Login page ─────────────────────────────────────────────────────────── */

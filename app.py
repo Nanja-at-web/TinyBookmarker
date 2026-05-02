@@ -570,6 +570,10 @@ def _build_pagination(args, total: int, page: int, per_page: int) -> dict:
         "has_next": page < num_pages,
         "prev_url": _qs(page=page - 1, per_page=per_page) if page > 1 else None,
         "next_url": _qs(page=page + 1, per_page=per_page) if page < num_pages else None,
+        "page_links": [
+            {"page": n, "url": _qs(page=n, per_page=per_page), "current": n == page}
+            for n in range(1, num_pages + 1)
+        ],
         "per_page_options": [
             {"value": pp, "url": _qs(page=1, per_page=pp), "selected": pp == per_page}
             for pp in bm.PAGE_SIZES

@@ -678,7 +678,8 @@ def test_pagination_page2_returns_second_slice(client):
     assert resp.status_code == 200
     body = resp.get_data(as_text=True)
     assert "20 bookmarks" in body   # total shown in toolbar
-    assert "2 / 2" in body          # "page / num_pages"
+    assert "pagination-page-current" in body
+    assert ">2<" in body            # page 2 is the current (highlighted) page
 
 
 def test_pagination_per_page_15_is_default(client):
@@ -687,7 +688,8 @@ def test_pagination_per_page_15_is_default(client):
     resp = client.get("/bookmarks")
     body = resp.get_data(as_text=True)
     assert "20 bookmarks" in body
-    assert "1 / 2" in body          # 20 items at 15/page = 2 pages
+    assert "pagination-page-current" in body  # numbered pages rendered
+    assert ">2<" in body                      # page 2 link present
 
 
 def test_pagination_per_page_30_fits_all(client):
@@ -723,7 +725,8 @@ def test_pagination_collections_paginates(client):
         client.post("/collections/new", data={"name": f"Col{i:02d}"})
     resp = client.get("/collections?per_page=15")
     body = resp.get_data(as_text=True)
-    assert "1 / 2" in body
+    assert "pagination-page-current" in body
+    assert ">2<" in body
 
 
 def test_pagination_tags_paginates(client):
@@ -735,7 +738,8 @@ def test_pagination_tags_paginates(client):
         })
     resp = client.get("/tags?per_page=15")
     body = resp.get_data(as_text=True)
-    assert "1 / 2" in body
+    assert "pagination-page-current" in body
+    assert ">2<" in body
 
 
 def test_pagination_per_page_selector_renders(client):
@@ -743,6 +747,35 @@ def test_pagination_per_page_selector_renders(client):
     body = client.get("/bookmarks").get_data(as_text=True)
     assert "per page" in body
     assert 'name="per_page"' in body
+
+
+def test_pagination_numbered_pages_render(client):
+    # 20 bookmarks at per_page=15 → 2 pages; both numbers must appear.
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://n.example.com/{i}", "title": f"N{i}"})
+    body = client.get("/bookmarks?per_page=15").get_data(as_text=True)
+    assert "pagination-page" in body
+    assert ">1<" in body
+    assert ">2<" in body
+
+
+def test_pagination_current_page_is_marked(client):
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://m.example.com/{i}", "title": f"M{i}"})
+    # On page 2 the current marker should be on "2", not "1".
+    body = client.get("/bookmarks?page=2&per_page=15").get_data(as_text=True)
+    assert "pagination-page-current" in body
+    # The current span contains "2"; page 1 is a regular link (not current).
+    assert 'pagination-page-current" aria-current="page">2<' in body
+
+
+def test_pagination_page_links_carry_sort(client):
+    for i in range(20):
+        client.post("/bookmarks/new", data={"url": f"https://k.example.com/{i}", "title": f"K{i}"})
+    body = client.get("/bookmarks?sort=title&per_page=15").get_data(as_text=True)
+    # Every page link must preserve sort=title.
+    assert "sort=title" in body
+    assert "page=2" in body
 
 
 # ── Collections screen ────────────────────────────────────────────────────────
